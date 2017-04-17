@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"log"
@@ -11,7 +12,8 @@ import (
 	"time"
 
 	"github.com/hpcloud/tail"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/altsrc"
+	"gopkg.in/urfave/cli.v1"
 )
 
 func main() {
@@ -20,23 +22,38 @@ func main() {
 	app.Usage = "forwards logs to timber.io"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  "file",
-			Usage: "log file to forward",
+			Name:  "config, c",
+			Usage: "location of the config file to read",
+			Value: "/etc/timber.toml",
 		},
 		cli.BoolFlag{
 			Name:  "stdin",
 			Usage: "read logs from stdin instead of a file",
 		},
-		cli.DurationFlag{
+		altsrc.NewStringFlag(cli.StringFlag{
+			Name:  "file",
+			Usage: "log file to forward",
+		}),
+		altsrc.NewDurationFlag(cli.DurationFlag{
 			Name:  "batch-period",
 			Usage: "how often to flush logs to the server",
 			Value: 5 * time.Second,
-		},
-		cli.BoolFlag{
+		}),
+		altsrc.NewBoolFlag(cli.BoolFlag{
 			Name:  "poll",
 			Usage: "poll files instead of using inotify",
-		},
+		}),
+		altsrc.NewStringFlag(cli.StringFlag{
+			Name:  "api-key",
+			Usage: "your timber API key",
+		}),
+		altsrc.NewStringFlag(cli.StringFlag{
+			Name:  "endpoint",
+			Usage: "the endpoint to which to forward logs",
+			Value: "https://ingestion-staging.timber.io/frames",
+		}),
 	}
+	app.Before = altsrc.InitInputSourceWithContext(app.Flags, altsrc.NewTomlSourceFromFlagFunc("config"))
 	app.Action = run
 
 	app.Run(os.Args)
@@ -48,6 +65,8 @@ func run(ctx *cli.Context) error {
 		return err
 	}
 
+	token := base64.StdEncoding.EncodeToString([]byte(ctx.String("api-key")))
+
 	// we send "finished" buffers over this channel to be sent as http requests
 	// asynchonously. a slowdown in the sender goroutine will eventually (based on
 	// channel buffering) provide backpressure on the log tailing goroutine, which
@@ -57,7 +76,7 @@ func run(ctx *cli.Context) error {
 	// would be to have a second channel for sending back old buffers for reuse,
 	// which could be a good option if we're seeing excess memory pressure
 	bufChan := make(chan *bytes.Buffer)
-	go sender(bufChan)
+	go sender(ctx.String("endpoint"), token, bufChan)
 
 	buf := bytes.NewBuffer([]byte{})
 	tick := time.Tick(ctx.Duration("batch-period"))
@@ -133,18 +152,22 @@ func tailFile(filename string, poll bool) chan string {
 	return ch
 }
 
-func sender(ch chan *bytes.Buffer) {
+func sender(endpoint, token string, ch chan *bytes.Buffer) {
 	transport := http.DefaultTransport
 	for buf := range ch {
-		req, err := http.NewRequest("POST", "http://localhost:8080/logs", buf)
+		req, err := http.NewRequest("POST", endpoint, buf)
 		if err != nil {
 			log.Fatal(err)
 		}
+		req.Header.Add("Content-Type", "text/plain")
+		req.Header.Add("Authorization", fmt.Sprintf("Basic %s", token))
+		req.Header.Add("Accept", "application/json")
 		resp, err := transport.RoundTrip(req)
 		if err != nil {
 			log.Fatal(err)
 		} else {
 			log.Printf("flushed buffer, got status code %d", resp.StatusCode)
+			resp.Body.Close()
 		}
 	}
 }
