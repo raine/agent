@@ -75,19 +75,27 @@ func run(ctx *cli.Context) error {
 	// this design relies on the gc to clean up old buffers, but an alternative
 	// would be to have a second channel for sending back old buffers for reuse,
 	// which could be a good option if we're seeing excess memory pressure
+	done := make(chan bool)
 	bufChan := make(chan *bytes.Buffer)
-	go sender(ctx.String("endpoint"), token, bufChan)
+	go sender(ctx.String("endpoint"), token, bufChan, done)
 
 	buf := bytes.NewBuffer([]byte{})
 	tick := time.Tick(ctx.Duration("batch-period"))
 	for {
 		select {
-		case line := <-lines:
+		case line, ok := <-lines:
 			io.WriteString(buf, line+"\n")
 			// TODO: make this configurable
 			if buf.Len() > 1000000 {
 				bufChan <- buf
 				buf = bytes.NewBuffer([]byte{})
+			}
+			if !ok { // channel is closed
+				bufChan <- buf
+				close(bufChan)
+				// wait for sender to finish
+				<-done
+				return nil
 			}
 		case <-tick:
 			if buf.Len() > 0 {
@@ -123,6 +131,7 @@ func tailStdin() chan string {
 		if err := scanner.Err(); err != nil {
 			fmt.Fprintln(os.Stderr, "error reading stdin:", err)
 		}
+		close(ch)
 	}()
 
 	return ch
@@ -152,7 +161,7 @@ func tailFile(filename string, poll bool) chan string {
 	return ch
 }
 
-func sender(endpoint, token string, ch chan *bytes.Buffer) {
+func sender(endpoint, token string, ch chan *bytes.Buffer, done chan bool) {
 	transport := http.DefaultTransport
 	for buf := range ch {
 		req, err := http.NewRequest("POST", endpoint, buf)
@@ -170,4 +179,5 @@ func sender(endpoint, token string, ch chan *bytes.Buffer) {
 			resp.Body.Close()
 		}
 	}
+	done <- true
 }
