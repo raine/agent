@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hpcloud/tail"
+	"github.com/influxdata/tail"
 	"github.com/urfave/cli/altsrc"
 	"gopkg.in/urfave/cli.v1"
 )
