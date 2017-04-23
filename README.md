@@ -7,8 +7,9 @@ This is a simple daemon that forwards logs to the timber.io service.
 Create a file at `/etc/timber.toml` and specify the following options:
 
 ```toml
-file = "/var/log/app.log"
-api-key = "mytimberapikey"
+[[files]]
+path = "/var/log/app.log"
+apiKey = "mytimberapikey"
 ```
 
 Then simply run the agent and it will tail the given file, forwarding its
@@ -32,17 +33,9 @@ COMMANDS:
      help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --config value, -c value  location of the config file to read (default: "/etc/timber.toml")
-   --stdin                   read logs from stdin instead of a file
-   --file value              log file to forward
-   --batch-period value      how often to flush logs to the server (default: 5s)
-   --poll                    poll files instead of using inotify
-   --api-key value           your timber API key
-   --endpoint value          the endpoint to which to forward logs (default: "https://ingestion-staging.timber.io/frames")
+   --config value, -c value  config file to use (default: "/etc/timber.toml")
+   --stdin                   read logs from stdin instead of tailing files
+   --api-key value           timber API key to use when forwarding stdin [$TIMBER_API_KEY]
    --help, -h                show help
    --version, -v             print the version
 ```
-
-Each option (excluding `--config` and `--stdin`) can be specified either in the
-TOML configuration file or on the command line, with the command line taking
-precedence.

@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/influxdata/tail"
-	"github.com/urfave/cli/altsrc"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -25,46 +24,56 @@ func main() {
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "config, c",
-			Usage: "location of the config file to read",
+			Usage: "config file to use",
 			Value: "/etc/timber.toml",
 		},
 		cli.BoolFlag{
 			Name:  "stdin",
-			Usage: "read logs from stdin instead of a file",
+			Usage: "read logs from stdin instead of tailing files",
 		},
-		altsrc.NewStringFlag(cli.StringFlag{
-			Name:  "file",
-			Usage: "log file to forward",
-		}),
-		altsrc.NewDurationFlag(cli.DurationFlag{
-			Name:  "batch-period",
-			Usage: "how often to flush logs to the server",
-			Value: 5 * time.Second,
-		}),
-		altsrc.NewBoolFlag(cli.BoolFlag{
-			Name:  "poll",
-			Usage: "poll files instead of using inotify",
-		}),
-		altsrc.NewStringFlag(cli.StringFlag{
-			Name:  "api-key",
-			Usage: "your timber API key",
-		}),
-		altsrc.NewStringFlag(cli.StringFlag{
-			Name:  "endpoint",
-			Usage: "the endpoint to which to forward logs",
-			Value: "https://ingestion-staging.timber.io/frames",
-		}),
+		cli.StringFlag{
+			Name:   "api-key",
+			Usage:  "timber API key to use when forwarding stdin",
+			EnvVar: "TIMBER_API_KEY",
+		},
 	}
-	app.Before = altsrc.InitInputSourceWithContext(app.Flags, altsrc.NewTomlSourceFromFlagFunc("config"))
 	app.Action = run
 
 	app.Run(os.Args)
 }
 
 func run(ctx *cli.Context) error {
-	lines, err := buildTail(ctx)
+	config, err := readConfig(ctx.String("config"))
 	if err != nil {
 		return err
+	}
+	fmt.Println("Timber agent starting up with config:")
+	fmt.Printf("  Endpoint: %s\n", config.Endpoint)
+	fmt.Printf("  BatchPeriodSeconds: %d\n", config.BatchPeriodSeconds)
+	fmt.Printf("  Poll: %t\n", config.Poll)
+
+	var lines chan string
+	var apiKey string
+
+	if ctx.IsSet("stdin") {
+		if !ctx.IsSet("api-key") {
+			return cli.NewExitError("--stdin requires --api-key or TIMBER_API_KEY set", 1)
+		} else {
+			fmt.Println("tailing stdin...")
+			lines = tailStdin()
+			apiKey = ctx.String("api-key")
+		}
+	} else {
+		if ctx.IsSet("api-key") {
+			return cli.NewExitError("--api-key is only for use with --stdin", 1)
+		} else {
+			for _, file := range config.Files {
+				fmt.Printf("tailing %s...\n", file.Path)
+				lines = tailFile(file.Path, config.Poll)
+				apiKey = file.ApiKey
+				break // TODO: multiple files
+			}
+		}
 	}
 
 	quit := make(chan bool)
@@ -84,7 +93,7 @@ func run(ctx *cli.Context) error {
 		}
 	}()
 
-	token := base64.StdEncoding.EncodeToString([]byte(ctx.String("api-key")))
+	token := base64.StdEncoding.EncodeToString([]byte(apiKey))
 
 	// we send "finished" buffers over this channel to be sent as http requests
 	// asynchonously. a slowdown in the sender goroutine will eventually (based on
@@ -96,10 +105,10 @@ func run(ctx *cli.Context) error {
 	// which could be a good option if we're seeing excess memory pressure
 	done := make(chan bool)
 	bufChan := make(chan *bytes.Buffer)
-	go sender(ctx.String("endpoint"), token, bufChan, done)
+	go sender(config.Endpoint, token, bufChan, done)
 
 	buf := bytes.NewBuffer([]byte{})
-	tick := time.Tick(ctx.Duration("batch-period"))
+	tick := time.Tick(time.Duration(config.BatchPeriodSeconds) * time.Second)
 	for {
 		select {
 		case line, ok := <-lines:
@@ -129,18 +138,6 @@ func run(ctx *cli.Context) error {
 			<-done
 			return nil
 		}
-	}
-}
-
-func buildTail(ctx *cli.Context) (chan string, error) {
-	if ctx.IsSet("stdin") && ctx.IsSet("file") {
-		return nil, cli.NewExitError("can't set both --stdin and --file", 1)
-	} else if ctx.IsSet("stdin") {
-		return tailStdin(), nil
-	} else if ctx.IsSet("file") {
-		return tailFile(ctx.String("file"), ctx.IsSet("poll")), nil
-	} else {
-		return nil, cli.NewExitError("must set one of --stdin or --file", 1)
 	}
 }
 
