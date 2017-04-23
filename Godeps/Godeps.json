@@ -9,31 +9,6 @@
 			"Rev": "b26d9c308763d68093482582cea63d69be07a0f0"
 		},
 		{
-			"ImportPath": "github.com/hpcloud/tail",
-			"Comment": "v1.0.0-9-gfaf842b",
-			"Rev": "faf842bde7ed83bbc3c65a2c454fae39bc29a95f"
-		},
-		{
-			"ImportPath": "github.com/hpcloud/tail/ratelimiter",
-			"Comment": "v1.0.0-9-gfaf842b",
-			"Rev": "faf842bde7ed83bbc3c65a2c454fae39bc29a95f"
-		},
-		{
-			"ImportPath": "github.com/hpcloud/tail/util",
-			"Comment": "v1.0.0-9-gfaf842b",
-			"Rev": "faf842bde7ed83bbc3c65a2c454fae39bc29a95f"
-		},
-		{
-			"ImportPath": "github.com/hpcloud/tail/watch",
-			"Comment": "v1.0.0-9-gfaf842b",
-			"Rev": "faf842bde7ed83bbc3c65a2c454fae39bc29a95f"
-		},
-		{
-			"ImportPath": "github.com/hpcloud/tail/winfile",
-			"Comment": "v1.0.0-9-gfaf842b",
-			"Rev": "faf842bde7ed83bbc3c65a2c454fae39bc29a95f"
-		},
-		{
 			"ImportPath": "github.com/influxdata/tail",
 			"Comment": "v1.0.0-13-ga395bf9",
 			"Rev": "a395bf99fe07c233f41fba0735fa2b13b58588ea"
@@ -59,9 +34,8 @@
 			"Rev": "a395bf99fe07c233f41fba0735fa2b13b58588ea"
 		},
 		{
-			"ImportPath": "github.com/urfave/cli/altsrc",
-			"Comment": "v1.19.1-28-g8ba6f23",
-			"Rev": "8ba6f23b6e36d03666a14bd9421f5e3efcb59aca"
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "ea9bcade75cb975a0b9738936568ab388b845617"
 		},
 		{
 			"ImportPath": "gopkg.in/fsnotify.v1",
@@ -76,10 +50,6 @@
 			"ImportPath": "gopkg.in/urfave/cli.v1",
 			"Comment": "v1.19.1",
 			"Rev": "0bdeddeeb0f650497d603c4ad7b20cfe685682f6"
-		},
-		{
-			"ImportPath": "gopkg.in/yaml.v2",
-			"Rev": "cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b"
 		}
 	]
 }

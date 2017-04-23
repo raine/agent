@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hpcloud/tail"
+	"github.com/influxdata/tail"
 )
 
 func generateLogLines(n int) chan string {
