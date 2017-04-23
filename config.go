@@ -1,6 +1,9 @@
 package main
 
-import "github.com/BurntSushi/toml"
+import (
+	"github.com/BurntSushi/toml"
+	"gopkg.in/urfave/cli.v1"
+)
 
 type fileConfig struct {
 	Path   string
@@ -30,4 +33,17 @@ func readConfig(file string) (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+func validateConfig(config *Config, ctx *cli.Context) error {
+	if ctx.IsSet("stdin") {
+		if !ctx.IsSet("api-key") {
+			return cli.NewExitError("--stdin requires --api-key or TIMBER_API_KEY set", 1)
+		}
+	} else {
+		if ctx.IsSet("api-key") {
+			return cli.NewExitError("--api-key is only for use with --stdin", 1)
+		}
+	}
+	return nil
 }

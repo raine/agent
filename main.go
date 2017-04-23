@@ -2,14 +2,12 @@ package main
 
 import (
 	"bufio"
-	"bytes"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -47,35 +45,54 @@ func run(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
+	if err := validateConfig(config, ctx); err != nil {
+		return err
+	}
+
 	fmt.Println("Timber agent starting up with config:")
 	fmt.Printf("  Endpoint: %s\n", config.Endpoint)
 	fmt.Printf("  BatchPeriodSeconds: %d\n", config.BatchPeriodSeconds)
 	fmt.Printf("  Poll: %t\n", config.Poll)
 
-	var lines chan string
-	var apiKey string
+	// this channel will close when we receive SIGINT or SIGTERM, hopefully giving
+	// us enough of a chance to shut down gracefully
+	quit := handleSignals()
 
 	if ctx.IsSet("stdin") {
-		if !ctx.IsSet("api-key") {
-			return cli.NewExitError("--stdin requires --api-key or TIMBER_API_KEY set", 1)
-		} else {
-			fmt.Println("tailing stdin...")
-			lines = tailStdin()
-			apiKey = ctx.String("api-key")
+		fmt.Println("tailing stdin...")
+
+		tailer := Tailer{
+			Lines:  tailReader(os.Stdin),
+			ApiKey: ctx.String("api-key"),
+			After:  func() {},
 		}
+
+		// TODO: maybe have a GlobalConfig subset or interface to pass here
+		return tailer.Run(config, quit)
+
 	} else {
-		if ctx.IsSet("api-key") {
-			return cli.NewExitError("--api-key is only for use with --stdin", 1)
-		} else {
-			for _, file := range config.Files {
-				fmt.Printf("tailing %s...\n", file.Path)
-				lines = tailFile(file.Path, config.Poll)
-				apiKey = file.ApiKey
-				break // TODO: multiple files
+		var wg sync.WaitGroup
+		for _, file := range config.Files {
+			fmt.Printf("tailing %s...\n", file.Path)
+
+			tailer := Tailer{
+				Lines:  tailFile(file.Path, config.Poll),
+				ApiKey: file.ApiKey,
+				After: func() {
+					wg.Done()
+				},
 			}
+
+			wg.Add(1)
+			go tailer.Run(config, quit)
+			wg.Wait()
 		}
 	}
+	return nil
+}
 
+func handleSignals() chan bool {
 	quit := make(chan bool)
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
@@ -93,58 +110,12 @@ func run(ctx *cli.Context) error {
 		}
 	}()
 
-	token := base64.StdEncoding.EncodeToString([]byte(apiKey))
-
-	// we send "finished" buffers over this channel to be sent as http requests
-	// asynchonously. a slowdown in the sender goroutine will eventually (based on
-	// channel buffering) provide backpressure on the log tailing goroutine, which
-	// should shed load in response.
-	//
-	// this design relies on the gc to clean up old buffers, but an alternative
-	// would be to have a second channel for sending back old buffers for reuse,
-	// which could be a good option if we're seeing excess memory pressure
-	done := make(chan bool)
-	bufChan := make(chan *bytes.Buffer)
-	go sender(config.Endpoint, token, bufChan, done)
-
-	buf := bytes.NewBuffer([]byte{})
-	tick := time.Tick(time.Duration(config.BatchPeriodSeconds) * time.Second)
-	for {
-		select {
-		case line, ok := <-lines:
-			io.WriteString(buf, line+"\n")
-			// TODO: make this configurable
-			if buf.Len() > 1000000 {
-				bufChan <- buf
-				buf = bytes.NewBuffer([]byte{})
-			}
-			if !ok { // channel is closed
-				bufChan <- buf
-				close(bufChan)
-				// wait for sender to finish
-				<-done
-				return nil
-			}
-		case <-tick:
-			if buf.Len() > 0 {
-				// TODO: extract a shared version of this, maybe preallocate 2MB buffers
-				bufChan <- buf
-				buf = bytes.NewBuffer([]byte{})
-			}
-		case <-quit:
-			bufChan <- buf
-			close(bufChan)
-			// wait for sender to finish
-			<-done
-			return nil
-		}
-	}
+	return quit
 }
 
-// TODO: pass a reader so this is easier to test
-func tailStdin() chan string {
+func tailReader(r io.Reader) chan string {
 	ch := make(chan string)
-	scanner := bufio.NewScanner(os.Stdin)
+	scanner := bufio.NewScanner(r)
 
 	go func() {
 		for scanner.Scan() {
@@ -181,25 +152,4 @@ func tailFile(filename string, poll bool) chan string {
 	}()
 
 	return ch
-}
-
-func sender(endpoint, token string, ch chan *bytes.Buffer, done chan bool) {
-	transport := http.DefaultTransport
-	for buf := range ch {
-		req, err := http.NewRequest("POST", endpoint, buf)
-		if err != nil {
-			log.Fatal(err)
-		}
-		req.Header.Add("Content-Type", "text/plain")
-		req.Header.Add("Authorization", fmt.Sprintf("Basic %s", token))
-		req.Header.Add("Accept", "application/json")
-		resp, err := transport.RoundTrip(req)
-		if err != nil {
-			log.Fatal(err)
-		} else {
-			log.Printf("flushed buffer, got status code %d", resp.StatusCode)
-			resp.Body.Close()
-		}
-	}
-	done <- true
 }
