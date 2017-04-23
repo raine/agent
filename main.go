@@ -9,6 +9,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/hpcloud/tail"
@@ -65,6 +67,23 @@ func run(ctx *cli.Context) error {
 		return err
 	}
 
+	quit := make(chan bool)
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		signal := <-signals
+		fmt.Println(fmt.Sprintf("Got %s, shutting down...", signal))
+		close(quit)
+		timeout := time.After(5 * time.Second)
+		select {
+		case <-signals:
+			os.Exit(1)
+		case <-timeout:
+			os.Exit(1)
+		}
+	}()
+
 	token := base64.StdEncoding.EncodeToString([]byte(ctx.String("api-key")))
 
 	// we send "finished" buffers over this channel to be sent as http requests
@@ -103,6 +122,12 @@ func run(ctx *cli.Context) error {
 				bufChan <- buf
 				buf = bytes.NewBuffer([]byte{})
 			}
+		case <-quit:
+			bufChan <- buf
+			close(bufChan)
+			// wait for sender to finish
+			<-done
+			return nil
 		}
 	}
 }
