@@ -41,6 +41,8 @@ func main() {
 }
 
 func run(ctx *cli.Context) error {
+	log.SetOutput(os.Stdout)
+
 	config, err := readConfig(ctx.String("config"))
 	if err != nil {
 		return err
@@ -50,17 +52,17 @@ func run(ctx *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("Timber agent starting up with config:")
-	fmt.Printf("  Endpoint: %s\n", config.Endpoint)
-	fmt.Printf("  BatchPeriodSeconds: %d\n", config.BatchPeriodSeconds)
-	fmt.Printf("  Poll: %t\n", config.Poll)
+	log.Println("Timber agent starting up with config:")
+	log.Printf("  Endpoint: %s", config.Endpoint)
+	log.Printf("  BatchPeriodSeconds: %d", config.BatchPeriodSeconds)
+	log.Printf("  Poll: %t", config.Poll)
 
 	// this channel will close when we receive SIGINT or SIGTERM, hopefully giving
 	// us enough of a chance to shut down gracefully
 	quit := handleSignals()
 
 	if ctx.IsSet("stdin") {
-		fmt.Println("tailing stdin...")
+		log.Println("  Stdin: true")
 
 		tailer := Tailer{
 			Lines:  tailReader(os.Stdin),
@@ -73,8 +75,9 @@ func run(ctx *cli.Context) error {
 
 	} else {
 		var wg sync.WaitGroup
+		log.Println("  Files:")
 		for _, file := range config.Files {
-			fmt.Printf("tailing %s...\n", file.Path)
+			log.Printf("    %s", file.Path)
 
 			tailer := Tailer{
 				Lines:  tailFile(file.Path, config.Poll),
@@ -99,7 +102,7 @@ func handleSignals() chan bool {
 
 	go func() {
 		signal := <-signals
-		fmt.Println(fmt.Sprintf("Got %s, shutting down...", signal))
+		log.Println(fmt.Sprintf("got %s, shutting down...", signal))
 		close(quit)
 		timeout := time.After(5 * time.Second)
 		select {
@@ -122,7 +125,7 @@ func tailReader(r io.Reader) chan string {
 			ch <- scanner.Text()
 		}
 		if err := scanner.Err(); err != nil {
-			fmt.Fprintln(os.Stderr, "error reading stdin:", err)
+			log.Println("error reading stdin: ", err)
 		}
 		close(ch)
 	}()
@@ -144,7 +147,7 @@ func tailFile(filename string, poll bool) chan string {
 	go func() {
 		for line := range tailer.Lines {
 			if err := line.Err; err != nil {
-				fmt.Fprintln(os.Stderr, "error reading from file:", err)
+				log.Println("error reading from file: ", err)
 			} else {
 				ch <- line.Text
 			}
