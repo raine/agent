@@ -16,7 +16,6 @@ func AcceptLogs(out io.Writer) {
 			log.Fatal(err)
 		}
 		fmt.Fprintln(out, string(dump))
-		log.Println("handling request")
 		w.WriteHeader(200)
 	})
 	log.Fatal(http.ListenAndServe(":8080", nil))

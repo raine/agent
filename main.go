@@ -64,11 +64,7 @@ func run(ctx *cli.Context) error {
 	if ctx.IsSet("stdin") {
 		log.Println("  Stdin: true")
 
-		tailer := Tailer{
-			Lines:  tailReader(os.Stdin),
-			ApiKey: ctx.String("api-key"),
-			After:  func() {},
-		}
+		tailer := NewTailer(tailReader(os.Stdin), ctx.String("api-key"))
 
 		// TODO: maybe have a GlobalConfig subset or interface to pass here
 		return tailer.Run(config, quit)
@@ -79,12 +75,9 @@ func run(ctx *cli.Context) error {
 		for _, file := range config.Files {
 			log.Printf("    %s", file.Path)
 
-			tailer := Tailer{
-				Lines:  tailFile(file.Path, config.Poll),
-				ApiKey: file.ApiKey,
-				After: func() {
-					wg.Done()
-				},
+			tailer := NewTailer(tailFile(file.Path, config.Poll), file.ApiKey)
+			tailer.After = func() {
+				wg.Done()
 			}
 
 			wg.Add(1)
