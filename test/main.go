@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/timberio/agent/test"
+	"github.com/timberio/agent/test/server"
 )
 
 func main() {
