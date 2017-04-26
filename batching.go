@@ -12,20 +12,19 @@ func Batch(lines chan string, bufChan chan *bytes.Buffer, batchPeriodSeconds int
 	for {
 		select {
 		case line, ok := <-lines:
-
-			if buf.Len()+len(line)+1 > buf.Cap() {
-				bufChan <- buf
-				buf = freshBuffer()
-			}
-
-			if len(line) > 0 {
-				io.WriteString(buf, line+"\n")
-			}
-
-			if !ok { // channel is closed
-				if buf.Len() > 0 {
+			if ok {
+				if buf.Len()+len(line)+1 > buf.Cap() {
 					bufChan <- buf
 					buf = freshBuffer()
+				}
+
+				if len(line) > 0 {
+					io.WriteString(buf, line+"\n")
+				}
+
+			} else { // channel is closed
+				if buf.Len() > 0 {
+					bufChan <- buf
 				}
 				close(bufChan)
 				return

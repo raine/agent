@@ -32,16 +32,21 @@ func NewFileTailer(filename string, poll bool, quit chan bool) FileTailer {
 	go func() {
 		for {
 			select {
-			case line := <-inner.Lines:
-				if err := line.Err; err != nil {
-					log.Println("error reading from %s: %s", filename, err)
+			case line, ok := <-inner.Lines:
+				if ok {
+					if err := line.Err; err != nil {
+						log.Println("error reading from %s: %s", filename, err)
+					} else {
+						ch <- line.Text
+					}
 				} else {
-					ch <- line.Text
+					close(ch)
+					// TODO: save progress
+					return
 				}
+
 			case <-quit:
 				inner.Stop()
-				// TODO: let it keep going, wait for Lines to close, then save progress
-				return
 			}
 		}
 	}()
