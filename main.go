@@ -42,7 +42,12 @@ func main() {
 func run(ctx *cli.Context) error {
 	log.SetOutput(os.Stdout)
 
-	config, err := readConfig(ctx.String("config"))
+	configFile, err := os.Open(ctx.String("config"))
+	if err != nil {
+		return err
+	}
+
+	config, err := readConfig(configFile)
 	if err != nil {
 		return err
 	}

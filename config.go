@@ -1,6 +1,8 @@
 package main
 
 import (
+	"io"
+
 	"github.com/BurntSushi/toml"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -17,10 +19,10 @@ type Config struct {
 	Poll               bool
 }
 
-func readConfig(file string) (*Config, error) {
+func readConfig(in io.Reader) (*Config, error) {
 	var config Config
 
-	if _, err := toml.DecodeFile(file, &config); err != nil {
+	if _, err := toml.DecodeReader(in, &config); err != nil {
 		return nil, err
 	}
 
