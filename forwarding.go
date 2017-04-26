@@ -22,7 +22,14 @@ func Forward(bufChan chan *bytes.Buffer, transport http.RoundTripper, endpoint, 
 		if err != nil {
 			log.Fatal(err)
 		} else {
-			log.Printf("flushed buffer, got status code %d", resp.StatusCode)
+			// TODO: do this for real once API stops returning 500s
+			// if resp.StatusCode == 200 {
+			log.Println("flushed buffer successfully")
+			// } else {
+			//   do some retries with something like:
+			//     https://github.com/hashicorp/go-retryablehttp
+			//     https://github.com/sethgrid/pester
+			// }
 			resp.Body.Close()
 		}
 	}
