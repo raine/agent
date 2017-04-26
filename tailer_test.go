@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -21,7 +22,7 @@ func generateLogLines(n int) chan string {
 	return ch
 }
 
-func TestBasicTailing(test *testing.T) {
+func TestFileTailer(test *testing.T) {
 	file, err := ioutil.TempFile("", "timber-agent-test")
 	if err != nil {
 		panic(err)
@@ -45,6 +46,22 @@ func TestBasicTailing(test *testing.T) {
 			}
 		case <-timeout:
 			test.Fatalf("timed out expecting '%s'", expectedLine)
+		}
+	}
+}
+
+func TestReaderTailer(test *testing.T) {
+	var buf bytes.Buffer
+	for line := range generateLogLines(10) {
+		buf.WriteString(line + "\n")
+	}
+
+	tailer := NewReaderTailer(&buf, nil)
+
+	expected := generateLogLines(10)
+	for line := range tailer.Lines() {
+		if line != <-expected {
+			test.Fail()
 		}
 	}
 }
