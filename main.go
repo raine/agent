@@ -79,6 +79,7 @@ func run(ctx *cli.Context) error {
 		var wg sync.WaitGroup
 		log.Println("  Files:")
 		for _, file := range config.Files {
+			file := file
 			log.Printf("    %s", file.Path)
 
 			go func() {
@@ -92,9 +93,9 @@ func run(ctx *cli.Context) error {
 				wg.Done()
 			}()
 			wg.Add(1)
-
-			wg.Wait()
 		}
+
+		wg.Wait()
 	}
 
 	return nil
