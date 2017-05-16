@@ -32,6 +32,7 @@ func TestFileTailer(test *testing.T) {
 	tailer := NewFileTailer(file.Name(), false, nil)
 
 	go func() {
+		time.Sleep(5 * time.Millisecond)
 		for line := range generateLogLines(100) {
 			fmt.Fprintln(file, line)
 		}
@@ -62,6 +63,37 @@ func TestReaderTailer(test *testing.T) {
 	for line := range tailer.Lines() {
 		if line != <-expected {
 			test.Fail()
+		}
+	}
+}
+
+func TestFileTailerStartsAtEnd(test *testing.T) {
+	file, err := ioutil.TempFile("", "timber-agent-test")
+	if err != nil {
+		panic(err)
+	}
+	defer os.Remove(file.Name())
+
+	fmt.Fprintln(file, "skip me")
+
+	tailer := NewFileTailer(file.Name(), false, nil)
+
+	go func() {
+		time.Sleep(5 * time.Millisecond)
+		for line := range generateLogLines(100) {
+			fmt.Fprintln(file, line)
+		}
+	}()
+
+	timeout := time.After(100 * time.Millisecond)
+	for expectedLine := range generateLogLines(100) {
+		select {
+		case line := <-tailer.Lines():
+			if line != expectedLine {
+				test.Fatalf("got '%s', expected '%s'", line, expectedLine)
+			}
+		case <-timeout:
+			test.Fatalf("timed out expecting '%s'", expectedLine)
 		}
 	}
 }

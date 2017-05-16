@@ -21,9 +21,10 @@ func NewFileTailer(filename string, poll bool, quit chan bool) FileTailer {
 	ch := make(chan string)
 	// TODO: check for statefile with progress, seek there
 	inner, err := tail.TailFile(filename, tail.Config{
-		Follow: true,
-		ReOpen: true,
-		Poll:   poll,
+		Follow:   true,
+		ReOpen:   true,
+		Poll:     poll,
+		Location: &tail.SeekInfo{0, io.SeekEnd},
 	})
 	if err != nil {
 		log.Fatal(err)
