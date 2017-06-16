@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/hashicorp/go-retryablehttp"
 
 	"gopkg.in/urfave/cli.v1"
 )
@@ -65,6 +66,9 @@ func run(ctx *cli.Context) error {
 	// us enough of a chance to shut down gracefully
 	quit := handleSignals()
 
+	client := retryablehttp.NewClient()
+	client.HTTPClient.Timeout = 10 * time.Second
+
 	if ctx.IsSet("stdin") {
 		log.Println("  Stdin: true")
 
@@ -73,7 +77,7 @@ func run(ctx *cli.Context) error {
 
 		go Batch(tailer.Lines(), bufChan, config.BatchPeriodSeconds)
 
-		Forward(bufChan, http.DefaultTransport, config.Endpoint, ctx.String("api-key"))
+		Forward(bufChan, client, config.Endpoint, ctx.String("api-key"))
 
 	} else {
 		var wg sync.WaitGroup
@@ -88,7 +92,7 @@ func run(ctx *cli.Context) error {
 
 				go Batch(tailer.Lines(), bufChan, config.BatchPeriodSeconds)
 
-				Forward(bufChan, http.DefaultTransport, config.Endpoint, file.ApiKey)
+				Forward(bufChan, client, config.Endpoint, file.ApiKey)
 
 				wg.Done()
 			}()
