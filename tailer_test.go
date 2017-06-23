@@ -3,24 +3,12 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"testing"
 	"time"
 )
-
-func generateLogLines(n int) chan string {
-	ch := make(chan string)
-
-	go func() {
-		for i := 0; i < n; i++ {
-			ch <- fmt.Sprintf("test log line %d", i)
-		}
-		close(ch)
-	}()
-
-	return ch
-}
 
 func TestFileTailer(test *testing.T) {
 	file, err := ioutil.TempFile("", "timber-agent-test")
@@ -30,36 +18,21 @@ func TestFileTailer(test *testing.T) {
 	defer os.Remove(file.Name())
 
 	tailer := NewFileTailer(file.Name(), false, nil)
+	time.Sleep(5 * time.Millisecond)
 
-	go func() {
-		time.Sleep(5 * time.Millisecond)
-		for line := range generateLogLines(100) {
-			fmt.Fprintln(file, line)
-		}
-	}()
-
-	timeout := time.After(100 * time.Millisecond)
-	for expectedLine := range generateLogLines(100) {
-		select {
-		case line := <-tailer.Lines():
-			if line != expectedLine {
-				test.Fatalf("got '%s', expected '%s'", line, expectedLine)
-			}
-		case <-timeout:
-			test.Fatalf("timed out expecting '%s'", expectedLine)
-		}
-	}
+	go sendLines(file, generateLogLines("test", 100))
+	expectLines(test, tailer, generateLogLines("test", 100))
 }
 
 func TestReaderTailer(test *testing.T) {
 	var buf bytes.Buffer
-	for line := range generateLogLines(10) {
+	for line := range generateLogLines("test", 10) {
 		buf.WriteString(line + "\n")
 	}
 
 	tailer := NewReaderTailer(&buf, nil)
 
-	expected := generateLogLines(10)
+	expected := generateLogLines("test", 10)
 	for line := range tailer.Lines() {
 		if line != <-expected {
 			test.Fail()
@@ -67,7 +40,7 @@ func TestReaderTailer(test *testing.T) {
 	}
 }
 
-func TestFileTailerStartsAtEnd(test *testing.T) {
+func TestFileTailerPersistsState(test *testing.T) {
 	file, err := ioutil.TempFile("", "timber-agent-test")
 	if err != nil {
 		panic(err)
@@ -75,18 +48,72 @@ func TestFileTailerStartsAtEnd(test *testing.T) {
 	defer os.Remove(file.Name())
 
 	fmt.Fprintln(file, "skip me")
+	quit := make(chan bool)
 
-	tailer := NewFileTailer(file.Name(), false, nil)
+	// with no state file, tail should start at the end
+	firstTailer := NewFileTailer(file.Name(), false, quit)
+	time.Sleep(5 * time.Millisecond)
+
+	go sendLines(file, generateLogLines("one", 10))
+	expectLines(test, firstTailer, generateLogLines("one", 10))
+
+	quit <- true
+	firstTailer.Wait()
+
+	sendLines(file, generateLogLines("two", 10))
+	time.Sleep(5 * time.Millisecond)
+
+	// with state file, start from previous spot
+	secondTailer := NewFileTailer(file.Name(), false, quit)
+	time.Sleep(5 * time.Millisecond)
+
+	go sendLines(file, generateLogLines("three", 10))
+	expectLines(test, secondTailer, generateLogLines("two", 10))
+	expectLines(test, secondTailer, generateLogLines("three", 10))
+
+	quit <- true
+	secondTailer.Wait()
+
+	sendLines(file, generateLogLines("four", 10))
+	time.Sleep(5 * time.Millisecond)
+
+	// after multiple runs, state file should contain most recent state
+	thirdTailer := NewFileTailer(file.Name(), false, quit)
+	time.Sleep(5 * time.Millisecond)
+
+	go sendLines(file, generateLogLines("five", 10))
+	expectLines(test, thirdTailer, generateLogLines("four", 10))
+	expectLines(test, thirdTailer, generateLogLines("five", 10))
+
+	quit <- true
+	thirdTailer.Wait()
+
+	time.Sleep(5 * time.Millisecond)
+	thirdTailer.RemoveStatefile()
+}
+
+func generateLogLines(prefix string, n int) chan string {
+	ch := make(chan string)
 
 	go func() {
-		time.Sleep(5 * time.Millisecond)
-		for line := range generateLogLines(100) {
-			fmt.Fprintln(file, line)
+		for i := 0; i < n; i++ {
+			ch <- fmt.Sprintf("%s %d", prefix, i)
 		}
+		close(ch)
 	}()
 
+	return ch
+}
+
+func sendLines(w io.Writer, lines chan string) {
+	for line := range lines {
+		fmt.Fprintln(w, line)
+	}
+}
+
+func expectLines(test *testing.T, tailer Tailer, lines chan string) {
 	timeout := time.After(100 * time.Millisecond)
-	for expectedLine := range generateLogLines(100) {
+	for expectedLine := range lines {
 		select {
 		case line := <-tailer.Lines():
 			if line != expectedLine {

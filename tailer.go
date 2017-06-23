@@ -2,8 +2,12 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
+	"fmt"
 	"io"
 	"log"
+	"os"
+	"path"
 
 	"github.com/influxdata/tail"
 )
@@ -13,18 +17,28 @@ type Tailer interface {
 }
 
 type FileTailer struct {
-	inner *tail.Tail
-	lines chan string
+	inner     *tail.Tail
+	lines     chan string
+	statefile string
 }
 
-func NewFileTailer(filename string, poll bool, quit chan bool) FileTailer {
+func NewFileTailer(filename string, poll bool, quit chan bool) *FileTailer {
 	ch := make(chan string)
-	// TODO: check for statefile with progress, seek there
+	statefile := statefilePath(filename)
+
+	end := &tail.SeekInfo{0, io.SeekEnd}
+	seekInfo, err := findStartingPoint(statefile)
+	if err != nil {
+		// TODO: not an error if state file didn't exist
+		log.Printf("error determining start point: %s", err)
+		seekInfo = end
+	}
+
 	inner, err := tail.TailFile(filename, tail.Config{
 		Follow:   true,
 		ReOpen:   true,
 		Poll:     poll,
-		Location: &tail.SeekInfo{0, io.SeekEnd},
+		Location: seekInfo,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -42,21 +56,87 @@ func NewFileTailer(filename string, poll bool, quit chan bool) FileTailer {
 					}
 				} else {
 					close(ch)
-					// TODO: save progress
+					log.Printf("stopped tailing %s at offset %d", filename, inner.LastOffset)
+					if err := persistState(statefile, inner.LastOffset); err != nil {
+						log.Printf("error persisting tail state: %s", err)
+					}
 					return
 				}
 
 			case <-quit:
+				// looks like we're getting into here multiple times for some files?
 				inner.Stop()
 			}
 		}
 	}()
 
-	return FileTailer{inner: inner, lines: ch}
+	return &FileTailer{inner: inner, lines: ch, statefile: statefile}
 }
 
 func (f *FileTailer) Lines() chan string {
 	return f.lines
+}
+
+func (f *FileTailer) Wait() {
+	f.inner.Wait()
+}
+
+func (f *FileTailer) RemoveStatefile() {
+	os.Remove(f.statefile)
+}
+
+type State struct {
+	Offset int64
+}
+
+func findStartingPoint(statefile string) (*tail.SeekInfo, error) {
+	f, err := os.Open(statefile)
+	if err != nil {
+		return nil, err
+	}
+
+	b := make([]byte, 2048)
+	bytesRead, err := f.Read(b)
+	if err != nil && err != io.EOF {
+		return nil, err
+	}
+
+	var state State
+	if err := json.Unmarshal(b[:bytesRead], &state); err != nil {
+		return nil, err
+	}
+
+	return &tail.SeekInfo{state.Offset, io.SeekStart}, nil
+}
+
+func persistState(statefile string, offset int64) error {
+	f, err := os.Create(statefile)
+	if err != nil {
+		return err
+	}
+
+	b, err := json.Marshal(State{Offset: offset})
+	if err != nil {
+		return err
+	}
+
+	if err := f.Truncate(0); err != nil {
+		return err
+	}
+
+	if _, err := f.WriteAt(b, 0); err != nil {
+		return err
+	}
+
+	if err := f.Sync(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func statefilePath(target string) string {
+	return fmt.Sprintf("%s-state.json", path.Base(target))
 }
 
 type ReaderTailer struct {
