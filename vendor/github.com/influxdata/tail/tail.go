@@ -77,6 +77,7 @@ type Tail struct {
 	Filename string
 	Lines    chan *Line
 	Config
+	LastOffset int64
 
 	file   *os.File
 	reader *bufio.Reader
@@ -174,6 +175,9 @@ var errStopAtEOF = errors.New("tail: stop at eof")
 
 func (tail *Tail) close() {
 	close(tail.Lines)
+	if offset, err := tail.Tell(); err == nil {
+		tail.LastOffset = offset
+	}
 	tail.closeFile()
 }
 
