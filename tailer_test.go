@@ -92,6 +92,48 @@ func TestFileTailerPersistsState(test *testing.T) {
 	thirdTailer.RemoveStatefile()
 }
 
+func TestFileTailerIgnoresStateAfterRotation(test *testing.T) {
+	file, err := ioutil.TempFile("", "timber-agent-test")
+	if err != nil {
+		panic(err)
+	}
+	defer os.Remove(file.Name())
+
+	fmt.Fprintln(file, "skip me")
+	quit := make(chan bool)
+
+	// with no state file, tail should start at the end
+	firstTailer := NewFileTailer(file.Name(), false, quit)
+	time.Sleep(5 * time.Millisecond)
+
+	go sendLines(file, generateLogLines("one", 10))
+	expectLines(test, firstTailer, generateLogLines("one", 10))
+
+	quit <- true
+	firstTailer.Wait()
+
+	// rotate file
+	file.Truncate(0)
+	file.Seek(0, io.SeekStart)
+
+	sendLines(file, generateLogLines("two", 10))
+	time.Sleep(5 * time.Millisecond)
+
+	// with state file that doesn't match, start from beginning
+	secondTailer := NewFileTailer(file.Name(), false, quit)
+	time.Sleep(5 * time.Millisecond)
+
+	go sendLines(file, generateLogLines("three", 10))
+	expectLines(test, secondTailer, generateLogLines("two", 10))
+	expectLines(test, secondTailer, generateLogLines("three", 10))
+
+	quit <- true
+	secondTailer.Wait()
+
+	time.Sleep(5 * time.Millisecond)
+	secondTailer.RemoveStatefile()
+}
+
 func generateLogLines(prefix string, n int) chan string {
 	ch := make(chan string)
 

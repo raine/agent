@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"log"
 	"os"
@@ -26,12 +27,28 @@ func NewFileTailer(filename string, poll bool, quit chan bool) *FileTailer {
 	ch := make(chan string)
 	statefile := statefilePath(filename)
 
+	var seekInfo *tail.SeekInfo
+	start := &tail.SeekInfo{0, io.SeekStart}
 	end := &tail.SeekInfo{0, io.SeekEnd}
-	seekInfo, err := findStartingPoint(statefile)
+	state, err := loadState(statefile)
 	if err != nil {
 		// TODO: not an error if state file didn't exist
 		log.Printf("error determining start point: %s", err)
 		seekInfo = end
+	} else {
+		checksum, err := calculateChecksum(filename)
+		if err != nil {
+			log.Printf("error checksumming: %s", err)
+			seekInfo = end
+		} else {
+			if checksum == state.Checksum {
+				// state file is applicable
+				seekInfo = &tail.SeekInfo{state.Offset, io.SeekStart}
+			} else {
+				// file has been rotated
+				seekInfo = start
+			}
+		}
 	}
 
 	inner, err := tail.TailFile(filename, tail.Config{
@@ -57,8 +74,13 @@ func NewFileTailer(filename string, poll bool, quit chan bool) *FileTailer {
 				} else {
 					close(ch)
 					log.Printf("stopped tailing %s at offset %d", filename, inner.LastOffset)
-					if err := persistState(statefile, inner.LastOffset); err != nil {
-						log.Printf("error persisting tail state: %s", err)
+					checksum, err := calculateChecksum(filename)
+					if err == nil {
+						if err := persistState(statefile, checksum, inner.LastOffset); err != nil {
+							log.Printf("error persisting tail state: %s", err)
+						}
+					} else {
+						log.Printf("error calculating checksum: %s", err)
 					}
 					return
 				}
@@ -86,10 +108,11 @@ func (f *FileTailer) RemoveStatefile() {
 }
 
 type State struct {
-	Offset int64
+	Checksum uint32
+	Offset   int64
 }
 
-func findStartingPoint(statefile string) (*tail.SeekInfo, error) {
+func loadState(statefile string) (*State, error) {
 	f, err := os.Open(statefile)
 	if err != nil {
 		return nil, err
@@ -106,16 +129,16 @@ func findStartingPoint(statefile string) (*tail.SeekInfo, error) {
 		return nil, err
 	}
 
-	return &tail.SeekInfo{state.Offset, io.SeekStart}, nil
+	return &state, nil
 }
 
-func persistState(statefile string, offset int64) error {
+func persistState(statefile string, checksum uint32, offset int64) error {
 	f, err := os.Create(statefile)
 	if err != nil {
 		return err
 	}
 
-	b, err := json.Marshal(State{Offset: offset})
+	b, err := json.Marshal(State{Checksum: checksum, Offset: offset})
 	if err != nil {
 		return err
 	}
@@ -133,6 +156,26 @@ func persistState(statefile string, offset int64) error {
 	}
 
 	return nil
+}
+
+func calculateChecksum(file string) (uint32, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return 0, err
+	}
+
+	b := make([]byte, 256)
+	bytesRead, err := f.ReadAt(b, 0)
+	if err != nil && err != io.EOF {
+		return 0, err
+	}
+
+	// TODO: handle this more robustly
+	if bytesRead < 256 {
+		log.Printf("read %d bytes for checksum instead of 256", bytesRead)
+	}
+
+	return crc32.ChecksumIEEE(b), nil
 }
 
 func statefilePath(target string) string {
