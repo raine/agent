@@ -9,6 +9,10 @@
 			"Rev": "b26d9c308763d68093482582cea63d69be07a0f0"
 		},
 		{
+			"ImportPath": "github.com/VividCortex/godaemon",
+			"Rev": "3d9f6e0b234fe7d17448b345b2e14ac05814a758"
+		},
+		{
 			"ImportPath": "github.com/hashicorp/go-cleanhttp",
 			"Rev": "3573b8b52aa7b37b9358d966a898feb387f62437"
 		},

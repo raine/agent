@@ -23,7 +23,7 @@ type FileTailer struct {
 	statefile string
 }
 
-func NewFileTailer(filename string, poll bool, quit chan bool) *FileTailer {
+func NewFileTailer(filename string, poll bool, quit chan bool, logger *log.Logger) *FileTailer {
 	ch := make(chan string)
 	statefile := statefilePath(filename)
 
@@ -56,6 +56,7 @@ func NewFileTailer(filename string, poll bool, quit chan bool) *FileTailer {
 		ReOpen:   true,
 		Poll:     poll,
 		Location: seekInfo,
+		Logger:   logger,
 	})
 	if err != nil {
 		log.Fatal(err)
