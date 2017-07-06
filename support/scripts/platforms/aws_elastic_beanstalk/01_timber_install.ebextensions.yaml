@@ -1,0 +1,186 @@
+###
+#
+# Installation configuration script for Timber's log collection agent
+#
+# This file installs the Timber log collection agent and starts it as a
+# backaground service. This is the desired situation for most AWS Elastic
+# Beanstalk solutions. It is recommended that you start by adding a separate
+# script that adds a Timber configuration file. An example can be found at:
+#
+#   https://github.com/timber/agent/blob/master/support/scripts/platforms/aws_elastic_beanstalk/00_timber_conf.ebextensions.yaml
+#
+# By maintaining the configuration file in a separate script, you can replace
+# this file with the latest version at any time without needing to edit it.
+#
+# This file should be added to the `.ebextensions` directory in your project
+# folder. It should be sorted _after_ the file that sets up the configuration
+# file (prefixing it with a number like `01_` does the trick).
+---
+files:
+  "/opt/install_timber.sh":
+    mode: "000755"
+    owner: root
+    group: root
+    encoding: plain
+    content: |
+      #!/usr/bin/env bash
+      #
+      # Elastic Beanstalk pre-deploy hook
+      #
+      # Shuts down the timber-agent service (if present) in order to allow upgrades
+      # to proceed smoothly; then removes the any current version of the agent and
+      # installs a fresh copy
+      #
+      if [ -f /etc/rc.d/init.d/timber-agent ]; then
+        /sbin/service timber-agent stop
+      fi
+
+      # Remove any existing version of the agent
+      rm -rf /opt/timber-agent
+
+      # Download the agent
+      curl -o /opt/timber-agent.tar.bz2 \
+        https://s3.amazonaws.com/packages.timber.io/agent/v0.0.0-alpha%2B20170705T195528Z/amd64-linux-gnu/timber-agent.tar.bz2
+
+      # Unpack the agent archive at /opt/timber-agent
+      tar -xjf /opt/timber-agent.tar.bz2 -C /opt
+
+      rm /opt/timber-agent.tar.bz2
+
+  "/etc/logrotate.d/timber":
+    mode: "000644"
+    owner: root
+    group: root
+    encoding: plain
+    content: |
+      /var/log/timber-agent.log {
+        missingok
+        notifempty
+        size 100K
+        rotate 2
+        postrotate
+          /sbin/service timber-agent condrestart
+        endscript
+      }
+
+  "/etc/rc.d/init.d/timber-agent":
+    mode: "000755"
+    owner: root
+    group: root
+    encoding: plain
+    content: |
+      #!/bin/sh
+      #
+      # timber-agent  Starts and stops the Timber agent as a daemonized service
+      #
+      # chkconfig: - 40 90
+      # description: Starts and stops the Timber agent as a daemonized service \
+      #              to read and upload log files to the Timber hosted service. \
+      #              Configuration of the Timber agent is stored in the file \
+      #              /etc/timber.toml.
+
+      ### BEGIN INIT INFO
+      # Provides:               timber-agent
+      # Required-Start:         $network $local_fs $remote_fs
+      # Required-Stop:          $network $local_fs $remote_fs
+      # Should-Start:           $named $time
+      # Should-Stop:            $named $time
+      # Default-Start:          3 4 5
+      # Default-Stop:           0 1 2 6
+      # Short-Description:      Starts and stops the Timber agent as a daemonized service
+      # Description:            Starts and stops the Timber agent as a daemonized service
+      #                         to read and upload log files to the Timber hosted service.
+      #                         Configuration of the Timber agent is stored in the file
+      #                         /etc/timber.toml.
+      ### END INIT INFO
+      PATH=/sbin:/bin
+
+      . /etc/rc.d/init.d/functions
+
+      prog="timber-agent"
+      exec=/opt/timber-agent/bin/timber-agent
+      pidfile=/var/run/$prog.pid
+      logfile=/var/log/timber-agent.log
+
+      lockfile=/var/lock/subsys/$prog
+
+      start() {
+        [ -x $exec ] || exit 5
+        echo -n $"Starting $prog: "
+        daemon $exec --daemonize --pidfile $pidfile --agent-log-file $logfile
+        retval=$?
+        echo
+        [ $retval -eq 0 ] && touch $lockfile
+        return $retval
+      }
+
+      stop() {
+        echo -n $"Stopping $prog: "
+        killproc -p $pidfile $prog
+        retval=$?
+        echo
+        [ $retval -eq 0 ] && rm -f $lockfile && rm -f $pidfile
+        return $retval
+      }
+
+      restart() {
+        stop
+        start
+      }
+
+      reload() {
+        restart
+      }
+
+      force_reload() {
+        restart
+      }
+
+      rh_status() {
+        status -p $pidfile $prog
+      }
+
+      rh_status_q() {
+        rh_status >/dev/null 2>&1
+      }
+
+      case "$1" in
+        start)
+          rh_status_q && exit 0
+          $1
+          ;;
+        stop)
+          rh_status_q || exit 0
+          $1
+          ;;
+        restart)
+          $1
+          ;;
+        reload)
+          rh_status_q || exit 7
+          $1
+          ;;
+        force-reload)
+          force_reload
+          ;;
+        status)
+          rh_status
+          ;;
+        condrestart|try-restart)
+          rh_status_q || exit 0
+          restart
+          ;;
+        *)
+          echo "Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload}"
+          exit 2
+          ;;
+      esac
+      exit $?
+
+commands:
+  00_install_timber:
+    command: "/opt/install_timber.sh"
+  01_chkconfig:
+    command: "/sbin/chkconfig timber-agent on"
+  02_start_service:
+    command: "/sbin/service timber-agent restart"
