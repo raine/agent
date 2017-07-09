@@ -39,3 +39,13 @@ GLOBAL OPTIONS:
    --help, -h                show help
    --version, -v             print the version
 ```
+
+## LICENSE
+
+The original parts of this software as developed by Timber Technologies, Inc. as
+well as contributors are licensed under the Internet Systems Consortium (ISC)
+License. This software is dependent upon third-party code which is
+statically linked into the executable at compile time. This third-party code is
+redistributed without modification and made available to all users  under the
+terms of each project's original license within the `vendor` directory of the
+project.
