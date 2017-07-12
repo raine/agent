@@ -1,0 +1,25 @@
+version: 2
+jobs:
+  build:
+    working_directory: /go/src/github.com/timberio/agent
+    docker:
+      - image: circleci/golang:1.8
+    environment:
+      TEST_RESULTS: /tmp/test-results
+    steps:
+      - checkout
+      - run:
+          name: Setup Test Results Directory
+          command: |
+            mkdir -p ${TEST_RESULTS}
+      - run:
+          name: Fetch Go JUnit Reporter
+          command: |
+            go get github.com/jstemmer/go-junit-report
+      - run:
+          name: Run Tests
+          command: |
+            trap "go-junit-report <${TEST_RESULTS}/go-test.out > ${TEST_RESULTS}/go-test-report.xml" EXIT
+            make test | tee ${TEST_RESULTS}/go-test.out
+      - store_test_results:
+          path: /tmp/test-results

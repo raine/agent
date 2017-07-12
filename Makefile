@@ -36,7 +36,7 @@ amd64-linux:
 	go build -o $(bindir)/$(exec)
 
 test:
-	go test
+	go test -v
 
 clean:
 	- rm -r $(distdir)
