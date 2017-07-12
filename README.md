@@ -40,6 +40,17 @@ GLOBAL OPTIONS:
    --version, -v             print the version
 ```
 
+## Contributing
+
+This project uses [Dep](https://github.com/golang/dep) as the dependency manager
+and all vendorized dependencies are committed into version control. If you make
+a change that includes a new dependency, please make sure to add it to the
+dependency manager properly. You can do this by editing the `Gopkg.toml` file in
+the root of the project ([format
+documentation](https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md)).
+After editing the file, run `dep ensure` to update the `vendor` folder.
+
+
 ## LICENSE
 
 The original parts of this software as developed by Timber Technologies, Inc. as
