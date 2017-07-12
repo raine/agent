@@ -50,6 +50,16 @@ func TestFileTailerPersistsState(test *testing.T) {
 	}
 	defer os.Remove(file.Name())
 
+	// Writes 256 bytes to the file as initial data; this ensures that
+	// the file hash can be computed properly
+	for i := 0; i < 256; i++ {
+		if _, err = file.WriteString("-"); err != nil {
+			panic(err)
+		}
+	}
+
+	file.WriteString("\n")
+
 	fmt.Fprintln(file, "skip me")
 	quit := make(chan bool)
 
