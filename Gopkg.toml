@@ -1,0 +1,19 @@
+[[constraint]]
+  name = "github.com/BurntSushi/toml"
+  version = "0.3.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/VividCortex/godaemon"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/hashicorp/go-retryablehttp"
+
+[[constraint]]
+  name = "github.com/timberio/tail"
+  revision = "cdfe527fb098c61e77f575e256c507868e5b31b2"
+
+[[constraint]]
+  name = "gopkg.in/urfave/cli.v1"
+  version = "1.19.1"
