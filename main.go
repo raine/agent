@@ -17,10 +17,13 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
+var version string
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "timber-agent"
 	app.Usage = "forwards logs to timber.io"
+	app.Version = version
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "config, c",
