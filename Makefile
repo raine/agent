@@ -53,6 +53,9 @@ amd64-linux-tarball: destination := $(distdir)/$(target)
 amd64-linux-tarball: amd64-linux
 	tar cjf $(distdir)/$(exec)-$(target)-$(version).tar.bz2 -C $(destination) $(exec)/
 
+docker-image: amd64-linux
+	@docker build -t timberio/agent:$(version) .
+
 test:
 	@go test -v
 
