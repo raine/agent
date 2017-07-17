@@ -151,6 +151,15 @@ func run(ctx *cli.Context) error {
 		return err
 	}
 
+	// Once the configuration has been fetched, we build the metadata string that will
+	// accompany each request. This metadata string is a JSON object derived from a
+	// LogEvent struct
+	metadata, err := BuildMetadata(config)
+
+	if err != nil {
+		return err
+	}
+
 	log.Println("Timber agent starting up with config:")
 	log.Printf("  Endpoint: %s", config.Endpoint)
 	log.Printf("  BatchPeriodSeconds: %d", config.BatchPeriodSeconds)
@@ -172,7 +181,7 @@ func run(ctx *cli.Context) error {
 
 		go Batch(tailer.Lines(), bufChan, config.BatchPeriodSeconds)
 
-		Forward(bufChan, client, config.Endpoint, ctx.String("api-key"))
+		Forward(bufChan, client, config.Endpoint, ctx.String("api-key"), metadata)
 
 	} else {
 		var wg sync.WaitGroup
@@ -187,7 +196,7 @@ func run(ctx *cli.Context) error {
 
 				go Batch(tailer.Lines(), bufChan, config.BatchPeriodSeconds)
 
-				Forward(bufChan, client, config.Endpoint, file.ApiKey)
+				Forward(bufChan, client, config.Endpoint, file.ApiKey, metadata)
 
 				wg.Done()
 			}()

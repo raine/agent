@@ -15,6 +15,14 @@ apiKey = "mytimberapikey"
 Then simply run the agent and it will tail the given file, forwarding its
 contents to the timber service using the provided API key.
 
+The agent will pick up the hostname of your server by default, but you can
+explicitly set the hostname you want it to use with your logs by providing
+a `hostname` key at the top of the file:
+
+```toml
+hostname = "worker-a.us-east-1.example.com"
+```
+
 ## Configuration
 
 Run `timber-agent help` to see the available options:

@@ -17,6 +17,7 @@ type Config struct {
 	Endpoint           string
 	BatchPeriodSeconds int64
 	Poll               bool
+	Hostname           string
 }
 
 func readConfig(in io.Reader) (*Config, error) {

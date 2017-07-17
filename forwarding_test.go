@@ -32,7 +32,7 @@ func TestForwarding(test *testing.T) {
 	}))
 	defer ts.Close()
 
-	Forward(bufChan, retryablehttp.NewClient(), ts.URL, "api key")
+	Forward(bufChan, retryablehttp.NewClient(), ts.URL, "api key", []byte(""))
 }
 
 func TestRetries(test *testing.T) {
@@ -54,9 +54,29 @@ func TestRetries(test *testing.T) {
 	client := retryablehttp.NewClient()
 	client.RetryWaitMin = 0
 
-	Forward(bufChan, client, ts.URL, "api key")
+	Forward(bufChan, client, ts.URL, "api key", []byte(""))
 
 	if retries != 1 {
 		test.Fatalf("expected 1 retry, got %d", retries)
 	}
+}
+
+func TestMetadata(test *testing.T) {
+	bufChan := make(chan *bytes.Buffer, 1)
+	bufChan <- bytes.NewBufferString("test log line\n")
+	close(bufChan)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+
+		expected := "Metadata test"
+		actual := r.Header.Get("Timber-Metadata-Override")
+
+		if actual != expected {
+			test.Fatalf("expected \"%+v\", got \"%+v\"", expected, actual)
+		}
+	}))
+	defer ts.Close()
+
+	Forward(bufChan, retryablehttp.NewClient(), ts.URL, "api key", []byte("Metadata test"))
 }
