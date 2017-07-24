@@ -7,7 +7,7 @@ import (
 )
 
 func BuildMetadata(config *Config) ([]byte, error) {
-	log_event_metadata := NewLogEvent()
+	log_event := NewLogEvent()
 	var hostname string
 
 	if config.Hostname != "" {
@@ -20,7 +20,12 @@ func BuildMetadata(config *Config) ([]byte, error) {
 		}
 	}
 
-	log_event_metadata.Context.System.Hostname = hostname
+	log_event.Context.System.Hostname = hostname
 
-	return json.Marshal(log_event_metadata)
+	if !config.CollectEC2MetadataDisabled {
+		client := GetEC2Client()
+		AddEC2Metadata(client, log_event)
+	}
+
+	return json.Marshal(log_event)
 }

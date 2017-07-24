@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Automatically collects hostname from the operating system and sends it as metadata
   to the server; allows the value to be overridden by setting the `hostname` parameter
   in the configuration file
+- Automatically collects EC2 instance metadata if available. This can be disabled by
+  setting the `disable_ec2_metadata` parameter in the configuration file to `true`
 
 ## [0.0.1] - 2017-07-13
 ### Added

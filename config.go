@@ -13,11 +13,12 @@ type fileConfig struct {
 }
 
 type Config struct {
-	Files              []fileConfig
-	Endpoint           string
-	BatchPeriodSeconds int64
-	Poll               bool
-	Hostname           string
+	Files                      []fileConfig
+	Endpoint                   string
+	BatchPeriodSeconds         int64
+	Poll                       bool
+	Hostname                   string
+	CollectEC2MetadataDisabled bool `toml:"disable_ec2_metadata"`
 }
 
 func readConfig(in io.Reader) (*Config, error) {
