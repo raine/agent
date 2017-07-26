@@ -1,6 +1,6 @@
 package main
 
-var schema string = "https://raw.githubusercontent.com/timberio/log-event-json-schema/v2.4.2/schema.json"
+var schema string = "https://raw.githubusercontent.com/timberio/log-event-json-schema/v3.0.7/schema.json"
 
 type LogEvent struct {
 	Schema  string  `json:"$schema"`
