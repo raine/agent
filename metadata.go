@@ -1,13 +1,15 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"os"
 )
 
-func BuildMetadata(config *Config) ([]byte, error) {
-	log_event := NewLogEvent()
+// BuildBaseMetadata constructs a *LogEvent that is designed to be sent
+// along with log frames to the collection endpoint. The metadata provides
+// additional data that overrides the data present in the log frames.
+func BuildBaseMetadata(config *Config) *LogEvent {
+	logEvent := NewLogEvent()
 	var hostname string
 
 	if config.Hostname != "" {
@@ -20,12 +22,12 @@ func BuildMetadata(config *Config) ([]byte, error) {
 		}
 	}
 
-	log_event.Context.System.Hostname = hostname
+	logEvent.Context.System.Hostname = hostname
 
 	if !config.CollectEC2MetadataDisabled {
 		client := GetEC2Client()
-		AddEC2Metadata(client, log_event)
+		AddEC2Metadata(client, logEvent)
 	}
 
-	return json.Marshal(log_event)
+	return logEvent
 }

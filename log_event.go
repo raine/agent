@@ -1,6 +1,10 @@
 package main
 
-var schema string = "https://raw.githubusercontent.com/timberio/log-event-json-schema/v3.0.7/schema.json"
+import (
+	"encoding/json"
+)
+
+var schema string = "https://raw.githubusercontent.com/timberio/log-event-json-schema/v3.0.8/schema.json"
 
 type LogEvent struct {
 	Schema  string  `json:"$schema"`
@@ -10,6 +14,7 @@ type LogEvent struct {
 type Context struct {
 	System   SystemContext   `json:"system,omitempty"`
 	Platform PlatformContext `json:"platform,omitempty"`
+	Source   SourceContext   `json:"source,omitempty"`
 }
 
 type SystemContext struct {
@@ -18,6 +23,10 @@ type SystemContext struct {
 
 type PlatformContext struct {
 	AWSEC2 AWSEC2Context `json:"aws_ec2,omitempty"`
+}
+
+type SourceContext struct {
+	FileName string `json:"file_name,omitempty"`
 }
 
 type AWSEC2Context struct {
@@ -30,4 +39,8 @@ type AWSEC2Context struct {
 
 func NewLogEvent() *LogEvent {
 	return &LogEvent{Schema: schema}
+}
+
+func (logEvent *LogEvent) EncodeJSON() ([]byte, error) {
+	return json.Marshal(logEvent)
 }

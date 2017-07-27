@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path"
 	"strconv"
 	"sync"
 	"syscall"
@@ -151,14 +152,10 @@ func run(ctx *cli.Context) error {
 		return err
 	}
 
-	// Once the configuration has been fetched, we build the metadata string that will
-	// accompany each request. This metadata string is a JSON object derived from a
-	// LogEvent struct
-	metadata, err := BuildMetadata(config)
-
-	if err != nil {
-		return err
-	}
+	// Once the configuration has been fetched, we build the base of the metadata that
+	// will accompany every log frame sent to the collection endpoint. The metadata is
+	// of the type *LogEvent.
+	metadata := BuildBaseMetadata(config)
 
 	log.Println("Timber agent starting up with config:")
 	log.Printf("  Endpoint: %s", config.Endpoint)
@@ -181,7 +178,15 @@ func run(ctx *cli.Context) error {
 
 		go Batch(tailer.Lines(), bufChan, config.BatchPeriodSeconds)
 
-		Forward(bufChan, client, config.Endpoint, ctx.String("api-key"), metadata)
+		// The metadata doesn't not rquire further modification, so we just
+		// transform is to JSON.
+		mdJSON, err := metadata.EncodeJSON()
+
+		if err != nil {
+			return err
+		}
+
+		Forward(bufChan, client, config.Endpoint, ctx.String("api-key"), mdJSON)
 
 	} else {
 		var wg sync.WaitGroup
@@ -191,12 +196,31 @@ func run(ctx *cli.Context) error {
 			log.Printf("    %s", file.Path)
 
 			go func() {
+				// Takes the base of the file's path so that "/var/log/apache2/access.log"
+				// becomes "access.log"
+				fileName := path.Base(file.Path)
+
+				// Makes a copy of the metadata; we only want set the filename on the
+				// local copy of the metadata
+				localMetadata := *metadata // localMetadata is of type LogEvent
+				md := &localMetadata       // md is of type *LogEvent
+				md.Context.Source.FileName = fileName
+				mdJSON, err := md.EncodeJSON()
+
+				if err != nil {
+					// If there was an error encoding to JSON, we exit this specific goroutine without
+					// disturbing the others.
+					log.Printf("Failed to encode additional metadata as JSON while preparing to tail %s", file.Path)
+					wg.Done()
+					return
+				}
+
 				bufChan := make(chan *bytes.Buffer)
 				tailer := NewFileTailer(file.Path, config.Poll, quit, logger)
 
 				go Batch(tailer.Lines(), bufChan, config.BatchPeriodSeconds)
 
-				Forward(bufChan, client, config.Endpoint, file.ApiKey, metadata)
+				Forward(bufChan, client, config.Endpoint, file.ApiKey, mdJSON)
 
 				wg.Done()
 			}()
