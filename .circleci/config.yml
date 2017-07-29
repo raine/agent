@@ -1,13 +1,9 @@
 ---
-defaults: &defaults
-  working_directory: /go/src/github.com/timberio/agent
-
 version: 2
 jobs:
-  test:
-    <<: *defaults
+  build:
     docker:
-      - image: circleci/golang:1.8
+      - image: timberio/timber-agent-builder:1.1.0
     environment:
       TEST_RESULTS: /tmp/test-results
     steps:
@@ -17,84 +13,35 @@ jobs:
           command: |
             mkdir -p ${TEST_RESULTS}
       - run:
-          name: Fetch Go JUnit Reporter
-          command: |
-            go get github.com/jstemmer/go-junit-report
-      - run:
           name: Run Tests
           command: |
             trap "go-junit-report <${TEST_RESULTS}/go-test.out > ${TEST_RESULTS}/go-test-report.xml" EXIT
             make test | tee ${TEST_RESULTS}/go-test.out
       - store_test_results:
           path: /tmp/test-results
-  build_amd64_darwin:
-    <<: *defaults
-    docker:
-      - image: circleci/golang:1.8
-    steps:
-      - checkout
       - run:
-          name: Build for Darwin (amd64/x86_64)
+          name: Publish Release
           command: |
-            make amd64-darwin-tarball
-      - persist_to_workspace:
-          root: build
-          paths:
-            - amd64-darwin
-  build_amd64_linux:
-    <<: *defaults
-    docker:
-      - image: circleci/golang:1.8
-    steps:
-      - checkout
-      - run:
-          name: Build for Linux (amd64/x86_64)
-          command: |
-            make amd64-linux-tarball
-      - persist_to_workspace:
-          root: build
-          paths:
-            - amd64-linux
-  build_and_publish_docker_image:
-    <<: *defaults
-    docker:
-      - image: docker:17.03.0-ce
-    steps:
-      - checkout
-      - attach_workspace:
-          at: /go/src/github.com/timberio/agent/build/amd64-linux
+            if [ -n "$CIRCLE_TAG" ]; then
+              make release
+            else
+              echo "Not running a release tag"
+            fi
       - setup_remote_docker
-      - run:
-          name: Build Docker Image
-          command: |
-            make docker-image
       - run:
           name: Publish Docker Image
           command: |
-            VERSION=$(cat VERSION)
-            docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-            docker push timberio/agent:$(VERSION)
+            if [ -n "$CIRCLE_TAG" ]; then
+              make docker-image
+              VERSION=$(cat VERSION)
+              docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+              docker push timberio/agent:$(VERSION)
+            else
+              echo "Not building a release tag"
+            fi
 
-workflows:
-  version: 2
-  build:
-    jobs:
-      - test
-      - build_darwin_amd64:
-          filters:
-            branches:
-              only: /refs\/tags\/v.*/
-          requires:
-            - test
-      - build_linux_amd64:
-          filters:
-            branches:
-              only: /refs\/tags\/v.*/
-          requires:
-            - test
-      - build_and_publish_docker_image:
-          filters:
-            branches:
-              only: /refs\/tags\/v.*/
-          requires:
-            - build_linux_amd64
+deployment:
+  release:
+    tag: /v.*/
+    commands:
+      - echo "Initiating tagged release workaround for CircleCI 2.0"
