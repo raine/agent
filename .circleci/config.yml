@@ -4,6 +4,7 @@ jobs:
   build:
     docker:
       - image: timberio/agent-builder:1.2.0
+    working_directory: /go/src/github.com/timberio/agent
     environment:
       TEST_RESULTS: /tmp/test-results
     steps:
