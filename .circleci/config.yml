@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: timberio/timber-agent-builder:1.1.0
+      - image: timberio/agent-builder:1.1.0
     environment:
       TEST_RESULTS: /tmp/test-results
     steps:
