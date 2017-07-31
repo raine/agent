@@ -19,19 +19,22 @@ exec := timber-agent
 github_repo := timberio/agent
 version = $(shell cat VERSION)
 
-.DEFAULT: dist
-.PHONY: clean build get-tools docker-image test clean-build clean-dist dist release
+.DEFAULT_GOAL := dist
 
+.PHONY: clean
 clean: clean-build clean-dist
 
+.PHONY: clean-build
 clean-build:
 	@echo "Removing build files"
 	rm -rf $(build_dir)
 
+.PHONY: clean-dist
 clean-dist:
 	@echo "Removing distribution files"
 	rm -rf $(dist_dir)
 
+.PHONY: build
 build: clean-build
 	@echo "Creating build directory"
 	mkdir -p $(build_dir)
@@ -41,6 +44,7 @@ build: clean-build
 		-osarch="linux/amd64" \
 		-output "$(build_dir)/$(exec)-$(version)-{{.OS}}-{{.Arch}}/bin/$(exec)"
 
+.PHONY: dist
 dist: clean-dist build
 	@echo "Creating distribution directory"
 	mkdir -p $(dist_dir)
@@ -51,6 +55,7 @@ dist: clean-dist build
 		(cd $(build_dir)/$$f && tar -czf $(dist_dir)/$$f.tar.gz *); \
 	done
 
+.PHONY: release
 release: dist
 	@tag=v$(version); \
 	changelog=$$(git show -s $$tag --pretty=tformat:%N | sed -e '1,3d'); \
@@ -74,14 +79,17 @@ release: dist
 		aws s3 cp $(dist_dir)/$$exact_filename $$latest_minor_destination; \
 	done
 
+.PHONY: release
 get-tools:
 	go get github.com/golang/dep/cmd/dep
 	go get github.com/c4milo/github-release
 	go get github.com/mitchellh/gox
 	go get github.com/jstemmer/go-junit-report
 
+.PHONY: docker-image
 docker-image: compile
 	docker build -t timberio/agent:$(version) --build-arg version=$(version) .
 
+.PHONY: test
 test:
 	@go test -v
