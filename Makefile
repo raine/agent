@@ -41,7 +41,10 @@ build: clean-build
 	@echo "Building targets"
 	@gox -ldflags "-X main.version=$(version)" \
 		-osarch="darwin/amd64" \
+		-osarch="freebsd/amd64" \
 		-osarch="linux/amd64" \
+		-osarch="netbsd/amd64" \
+		-osarch="openbsd/amd64" \
 		-output "$(build_dir)/$(exec)-$(version)-{{.OS}}-{{.Arch}}/bin/$(exec)"
 
 .PHONY: dist
