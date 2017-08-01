@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/VividCortex/godaemon"
 	"github.com/hashicorp/go-retryablehttp"
 
 	"gopkg.in/urfave/cli.v1"
@@ -41,7 +40,7 @@ func main() {
 		},
 		cli.BoolFlag{
 			Name:  "daemonize",
-			Usage: "starts an instance of agent as a daemon (see documentation)",
+			Usage: "starts an instance of agent as a daemon (only available on Linux; see documentation)",
 		},
 		cli.BoolFlag{
 			Name:  "stdin",
@@ -59,9 +58,14 @@ func main() {
 }
 
 func run(ctx *cli.Context) error {
-	// If the user has set the `--daemonize` flag, then we use
+	// If the user has set the `--daemonize` flag, then we call the
+	// Daemonize() function. The function is defined by either
+	// daemon.go or daemon_linux.go depending on the build platform.
+	// Daemonization is only possible on Linux, see daemon.go for
+	// a full discussion on this
 	if ctx.Bool("daemonize") {
-		if err := daemonize(ctx); err != nil {
+		if err := Daemonize(); err != nil {
+			logDaemonFailMessage(ctx, err)
 			os.Exit(1)
 		}
 	}
@@ -260,56 +264,6 @@ func handleSignals() chan bool {
 	return quit
 }
 
-// daemonize will attempt to daemonize the executable by calling
-// the godaemon package to perform a non-native forking operation; traditionally
-// this would be accomplished using the appropriate OS level functionality,
-// however this is not possible in Go. The call to `godaemon.MakeDaemon` will
-// cause the currently running agent to exit and launch a new agent outside
-// the current context.
-//
-// If daemonization fails, the function will CLI context to print out a message
-// to print the error out to the agent log (or STDOUT if no log path has been
-// set). The error is returned to the caller and the caller is expected to
-// exit. In addition to yielding control back to the caller, this also allows
-// any defer statements to complete.
-func daemonize(ctx *cli.Context) error {
-	_, _, err := godaemon.MakeDaemon(&godaemon.DaemonAttr{})
-
-	if err != nil {
-		// At this point, we have failed to daemonize. Unfortunately, we don't
-		// know what point in the daemonization process godaemon had reached.
-		//
-		// We will make a best-effort attempt to notify the user of the reason
-		// why and then exit with a non-zero code
-		//
-		// If we are still in stage 0, then the system context remains the same
-		// and we still have access to STDOUT and STDERR.
-		//
-		// If we are in stage 1, then we no longer have a logical STDOUT or STDERR
-		// that the user will be able to access
-
-		// Fallback to STDOUT even if it might not go to a TTY in case the log file
-		// cannot be opened or the path just wasn't set
-		log.SetOutput(os.Stdout)
-
-		// Atempt to write the log information to the agent-log-file path given by the user
-		if destination := ctx.String("agent-log-file"); destination != "" {
-			logfile, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0664)
-
-			if err != nil {
-				log.Printf("Attempted to open \"%s\" for agent logging, but failed: %v\n", destination, err)
-			} else {
-				defer logfile.Close()
-				log.SetOutput(logfile)
-			}
-		}
-
-		log.Printf("Failed to daemonize: %v\n", err)
-	}
-
-	return err
-}
-
 // writePIDFile writes the agent's process ID to the given file location
 func writePIDFile(pidfileLocation string) {
 	pid := int64(os.Getpid())
@@ -344,4 +298,38 @@ func removePIDFile(pidfileLocation string) error {
 	}
 
 	return nil
+}
+
+// At this point, we have failed to daemonize. Unfortunately, we don't
+// know what point in the daemonization process godaemon had reached.
+//
+// We will make a best-effort attempt to notify the user of the reason
+// why and then exit with a non-zero code
+//
+// If we are still in stage 0, then the system context remains the same
+// and we still have access to STDOUT and STDERR.
+//
+// If we are in stage 1, then we no longer have a logical STDOUT or STDERR
+// that the user will be able to access
+// function will CLI context to print out a message
+// to print the error out to the agent log (or STDOUT if no log path has been
+// set).
+func logDaemonFailMessage(ctx *cli.Context, err error) {
+	// Fallback to STDOUT even if it might not go to a TTY in case the log file
+	// cannot be opened or the path just wasn't set
+	log.SetOutput(os.Stdout)
+
+	// Atempt to write the log information to the agent-log-file path given by the user
+	if destination := ctx.String("agent-log-file"); destination != "" {
+		logfile, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0664)
+
+		if err != nil {
+			log.Printf("Attempted to open \"%s\" for agent logging, but failed: %v\n", destination, err)
+		} else {
+			defer logfile.Close()
+			log.SetOutput(logfile)
+		}
+	}
+
+	log.Printf("Failed to daemonize: %v\n", err)
 }
