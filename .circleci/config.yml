@@ -36,7 +36,7 @@ jobs:
               make docker-image
               VERSION=$(cat VERSION)
               docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-              docker push timberio/agent:$(VERSION)
+              docker push timberio/agent:$VERSION
             else
               echo "Not building a release tag"
             fi
