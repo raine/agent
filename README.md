@@ -32,16 +32,19 @@ NAME:
    timber-agent - forwards logs to timber.io
 
 USAGE:
-   main [global options] command [command options] [arguments...]
+   agent [global options] command [command options] [arguments...]
 
 VERSION:
-   0.0.0
+   0.1.0
 
 COMMANDS:
      help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --config value, -c value  config file to use (default: "/etc/timber.toml")
+   --pidfile PIDFILE         will store the pid in PIDFILE when set
+   --agent-log-file value    file path to store logs (will use STDOUT if blank)
+   --daemonize               starts an instance of agent as a daemon (only available on Linux; see documentation)
    --stdin                   read logs from stdin instead of tailing files
    --api-key value           timber API key to use when forwarding stdin [$TIMBER_API_KEY]
    --help, -h                show help

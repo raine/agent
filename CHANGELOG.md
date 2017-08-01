@@ -6,13 +6,15 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.1.0] - 2017-08-01
 ### Removed
 - Daemonization using the `--daemonization` flag is no longer possible on Darwin
   (macOS) or any other BSD variant. Daemonization is only permitted on Linux.
   This is due to incompatibilities between the daemonization libraries and the
   other operating systems.
 
-## 0.0.2 - 2017-07-28
+## [0.0.2] - 2017-07-28
 ### Added
 - Automatically collects hostname from the operating system and sends it as metadata
   to the server; allows the value to be overridden by setting the `hostname` parameter
@@ -29,7 +31,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   stop
 - Ability to upload logs by streaming them over STDIN
 
-[Unreleased]: https://github.com/timberio/agent/compare/v0.0.2...HEAD
+[Unreleased]: https://github.com/timberio/agent/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/timberio/agent/compare/v0.0.2...v0.1.0
 [0.0.2]: https://github.com/timberio/agent/compare/v0.0.1...v0.0.2
 
 
