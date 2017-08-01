@@ -90,7 +90,7 @@ get-tools:
 	go get github.com/jstemmer/go-junit-report
 
 .PHONY: docker-image
-docker-image: compile
+docker-image: build
 	docker build -t timberio/agent:$(version) --build-arg version=$(version) .
 
 .PHONY: test
