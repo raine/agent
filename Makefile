@@ -62,7 +62,7 @@ dist: clean-dist build
 release: dist
 	@tag=v$(version); \
 	changelog=$$(git show -s $$tag --pretty=tformat:%N | sed -e '1,3d'); \
-	github-release $(github_repo) $$tag master $$changelog "$(dist_dir)/*";
+	github-release $(github_repo) $$tag master $$changelog '$(dist_dir)/*';
 	$(eval FILES := $(shell ls $(dist_dir)))
 	@for exact_filename in $(FILES); do \
 		rel=$$(echo $$exact_filename | sed "s/\.tar\.gz//"); \
