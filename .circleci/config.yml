@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: timberio/agent-builder:1.2.0
+      - image: timberio/agent-builder:2.0.0
     working_directory: /go/src/github.com/timberio/agent
     environment:
       TEST_RESULTS: /tmp/test-results
