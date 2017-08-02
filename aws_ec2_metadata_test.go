@@ -43,7 +43,7 @@ func TestEC2ClientGetMetadata(test *testing.T) {
 	expected := "i1934195190"
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		expectedURI := "/latest/meta-data/instance_id"
+		expectedURI := "/latest/meta-data/instance-id"
 		if r.RequestURI != expectedURI {
 			test.Fatalf("Expected request URI to be %s, but got %s", expectedURI, r.RequestURI)
 		}
@@ -55,7 +55,7 @@ func TestEC2ClientGetMetadata(test *testing.T) {
 	ec2Client := GetEC2Client()
 	ec2Client.BaseEndpoint = ts.URL
 
-	instanceId, err := ec2Client.GetMetadata("instance_id")
+	instanceId, err := ec2Client.GetMetadata("instance-id")
 
 	if err != nil {
 		test.Fatalf("Expected to get metadata, encountered error instead: %s", err)
