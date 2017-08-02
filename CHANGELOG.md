@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.1.4] - 2017-08-02
 ### Fixed
   - AWS EC2 metadata now sources data from the correct key names
 
@@ -52,7 +54,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   stop
 - Ability to upload logs by streaming them over STDIN
 
-[Unreleased]: https://github.com/timberio/agent/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/timberio/agent/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/timberio/agent/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/timberio/agent/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/timberio/agent/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/timberio/agent/compare/v0.1.0...v0.1.1

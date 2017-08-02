@@ -35,7 +35,7 @@ USAGE:
    agent [global options] command [command options] [arguments...]
 
 VERSION:
-   0.1.3
+   0.1.4
 
 COMMANDS:
      help, h  Shows a list of commands or help for one command
