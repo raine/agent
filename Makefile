@@ -45,7 +45,7 @@ build: clean-build
 		-osarch="linux/amd64" \
 		-osarch="netbsd/amd64" \
 		-osarch="openbsd/amd64" \
-		-output "$(build_dir)/$(exec)-$(version)-{{.OS}}-{{.Arch}}/bin/$(exec)"
+		-output "$(build_dir)/$(exec)-$(version)-{{.OS}}-{{.Arch}}/$(exec)/bin/$(exec)"
 
 .PHONY: dist
 dist: clean-dist build
