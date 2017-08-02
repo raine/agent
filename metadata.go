@@ -20,7 +20,7 @@ func BuildBaseMetadata(config *Config) *LogEvent {
 			log.Println("Could not autodiscover hostname from operating system")
 		} else {
 			hostname = os_hostname
-			log.Println("Discovered hostname from system: %s", hostname)
+			log.Printf("Discovered hostname from system: %s", hostname)
 		}
 	}
 
