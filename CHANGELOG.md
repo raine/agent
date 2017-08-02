@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.1.1] - 2017-08-02
+### Changed
+- In distribution archives, the root of the archive contains the folder
+  `timber-agent` which then contains the `bin` folder. This should make
+  unpacking easier
+- The example AWS Elasticbeanstalk configuration has been updated to point to
+  the correct archive location for the 0.1.x release line.
+
 ## [0.1.0] - 2017-08-01
 ### Removed
 - Daemonization using the `--daemonization` flag is no longer possible on Darwin
@@ -31,8 +39,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   stop
 - Ability to upload logs by streaming them over STDIN
 
-[Unreleased]: https://github.com/timberio/agent/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/timberio/agent/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/timberio/agent/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/timberio/agent/compare/v0.0.2...v0.1.0
 [0.0.2]: https://github.com/timberio/agent/compare/v0.0.1...v0.0.2
-
-
