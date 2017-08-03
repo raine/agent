@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.0] - 2017-08-03
 ### Changed
   - API Keys in the config file should now be specified using the key name
     `api_key` instead of `apiKey`.
@@ -57,7 +59,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   stop
 - Ability to upload logs by streaming them over STDIN
 
-[Unreleased]: https://github.com/timberio/agent/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/timberio/agent/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/timberio/agent/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/timberio/agent/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/timberio/agent/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/timberio/agent/compare/v0.1.1...v0.1.2
