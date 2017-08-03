@@ -9,7 +9,7 @@ import (
 
 type fileConfig struct {
 	Path   string
-	ApiKey string
+	ApiKey string `toml:"api_key"`
 }
 
 type Config struct {

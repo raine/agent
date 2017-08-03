@@ -9,7 +9,7 @@ Create a file at `/etc/timber.toml` and specify the following options:
 ```toml
 [[files]]
 path = "/var/log/app.log"
-apiKey = "mytimberapikey"
+api_key = "mytimberapikey"
 ```
 
 Then simply run the agent and it will tail the given file, forwarding its

@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+  - API Keys in the config file should now be specified using the key name
+    `api_key` instead of `apiKey`.
 
 ## [0.1.4] - 2017-08-02
 ### Fixed
