@@ -7,9 +7,6 @@
 # The Makefile for github-release was used as a basis for this file.
 # The specific version can be found here:
 #   https://github.com/c4milo/github-release/blob/6d2edc2/Makefile
-#
-# P.S. David is well aware that this Makefile needs some DRY-ing up.
-# Issue #23 covers it. If you'd like to help out, feel free!
 
 build_dir := $(CURDIR)/build
 dist_dir := $(CURDIR)/dist
