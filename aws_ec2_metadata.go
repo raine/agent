@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -90,6 +91,10 @@ func (client *EC2Client) Available() bool {
 
 	resp.Body.Close()
 
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return false
+	}
+
 	return true
 }
 
@@ -101,6 +106,10 @@ func (client *EC2Client) GetMetadata(field string) (string, error) {
 	}
 
 	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", errors.New("Did not received a valid response for EC2 metadata")
+	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 

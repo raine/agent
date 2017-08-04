@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+
+  - If the AWS EC2 metadata service is available but returns HTTP errors (e.g.,
+    404), we treat it as an error rather than taking the body as metadata.
 
 ## [0.2.0] - 2017-08-03
 ### Changed

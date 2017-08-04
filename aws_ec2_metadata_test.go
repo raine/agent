@@ -24,6 +24,23 @@ func TestEC2ClientAvailableTrue(test *testing.T) {
 }
 
 // Available()
+// When the endpoint is available, but returns 404, Available() should return `false`
+func TestEC2ClientAvailable404(test *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+	}))
+
+	ec2Client := GetEC2Client()
+	ec2Client.BaseEndpoint = ts.URL
+
+	available := ec2Client.Available()
+
+	if available != false {
+		test.Fatal("Expected connection to metadata provider to fail")
+	}
+}
+
+// Available()
 // When the endpoint is not available, the connection should timeout
 // and Available() should return `false`
 func TestEC2ClientAvailableFalse(test *testing.T) {
@@ -63,6 +80,25 @@ func TestEC2ClientGetMetadata(test *testing.T) {
 
 	if instanceId != expected {
 		test.Fatalf("Expected instance ID of %s, got %s instead", expected, instanceId)
+	}
+}
+
+// GetMetadata()
+// When the service is available, the metadata should be fetched and returned
+// Tests that the client properly handles a 404 from the service
+func TestEC2ClientGetMetadata404(test *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte(""))
+	}))
+
+	ec2Client := GetEC2Client()
+	ec2Client.BaseEndpoint = ts.URL
+
+	_, err := ec2Client.GetMetadata("instance-id")
+
+	if err == nil {
+		test.Fatalf("Expected to get an error when fetching metadata but didn't")
 	}
 }
 
