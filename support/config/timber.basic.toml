@@ -1,0 +1,8 @@
+# This is an example Timber agent configuration that shows a very basic
+# setup. It watches the file /var/log/yum.log and uploads its contents
+# to the Timber Hosted service using the API key
+# "zrtPPH0w3gAkOtwxfKCUUpAH2oprQVfe".
+
+[[files]]
+path = "/var/log/yum.log"
+api_key = "zrtPPH0w3gAkOtwxfKCUUpAH2oprQVfe"
