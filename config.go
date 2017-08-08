@@ -13,6 +13,7 @@ type fileConfig struct {
 }
 
 type Config struct {
+	DefaultApiKey              string `toml:"default_api_key"`
 	Files                      []fileConfig
 	Endpoint                   string
 	BatchPeriodSeconds         int64
@@ -34,6 +35,14 @@ func readConfig(in io.Reader) (*Config, error) {
 
 	if config.Endpoint == "" {
 		config.Endpoint = "https://logs.timber.io/frames"
+	}
+
+	// If a file does not define its own API key, the default API key
+	// is used
+	for i := range config.Files {
+		if config.Files[i].ApiKey == "" {
+			config.Files[i].ApiKey = config.DefaultApiKey
+		}
 	}
 
 	return &config, nil

@@ -7,9 +7,17 @@ This is a simple daemon that forwards logs to the timber.io service.
 Create a file at `/etc/timber.toml` and specify the following options:
 
 ```toml
+default_api_key = "mytimberapikey"
+
 [[files]]
-path = "/var/log/app.log"
-api_key = "mytimberapikey"
+path = "/var/log/app1.log"
+
+[[files]]
+path = "/var/log/app2.log"
+
+[[files]]
+path = "/var/log/app3.log"
+api_key = "different-api-key" # send this file to a different Timber application
 ```
 
 Then simply run the agent and it will tail the given file, forwarding its

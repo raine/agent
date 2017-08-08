@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Releases now include a copy of the README
   - Releases now include a copy of the CHANGELOG
   - Releases now include a copy of the LICENSE
+  - Allows a user to configure a default API key using the `default_api_key`
+    configuration key. If a file definition does not have an API key, the
+    default API key will be used if it is present.
 
 ## [0.2.1] - 2017-08-04
 ### Fixed

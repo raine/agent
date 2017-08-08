@@ -22,7 +22,7 @@ func TestDefaults(t *testing.T) {
 	}
 }
 
-func TestApiKey(t *testing.T) {
+func TestFileSpecificApiKey(t *testing.T) {
 	configString := `
 [[files]]
 path = "/var/log/log.log"
@@ -45,6 +45,65 @@ api_key = "abc:1234"
 	}
 
 	expectedApiKey := "abc:1234"
+	apiKey := config.Files[0].ApiKey
+
+	if apiKey != expectedApiKey {
+		t.Errorf("Expected ApiKey to be %s but got %s", expectedApiKey, apiKey)
+	}
+}
+
+func TestDefaultFileApiKey(t *testing.T) {
+	configString := `
+default_api_key = "zyx:0987"
+[[files]]
+path = "/var/log/log.log"
+`
+
+	configFile := strings.NewReader(configString)
+
+	config, err := readConfig(configFile)
+
+	if err != nil {
+		panic(err)
+	}
+
+	expectedFileCount := 1
+	fileCount := len(config.Files)
+
+	if fileCount != expectedFileCount {
+		t.Fatalf("Expected %d files from configuration but %d reported", expectedFileCount, fileCount)
+	}
+
+	expectedApiKey := "zyx:0987"
+	apiKey := config.Files[0].ApiKey
+
+	if apiKey != expectedApiKey {
+		t.Errorf("Expected ApiKey to be %s but got %s", expectedApiKey, apiKey)
+	}
+}
+
+func TestNoApiKey(t *testing.T) {
+	configString := `
+[[files]]
+path = "/var/log/log.log"
+`
+
+	configFile := strings.NewReader(configString)
+
+	config, err := readConfig(configFile)
+
+	if err != nil {
+		panic(err)
+	}
+
+	expectedFileCount := 1
+	fileCount := len(config.Files)
+
+	if fileCount != expectedFileCount {
+		t.Fatalf("Expected %d files from configuration but %d reported", expectedFileCount, fileCount)
+	}
+
+	expectedApiKey := ""
 	apiKey := config.Files[0].ApiKey
 
 	if apiKey != expectedApiKey {
