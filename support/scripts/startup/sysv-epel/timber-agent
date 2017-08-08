@@ -1,0 +1,117 @@
+#!/bin/sh
+#
+# timber-agent  Starts and stops the Timber agent as a daemonized service
+#
+# chkconfig: 345 40 90
+# description: Starts and stops the Timber agent as a daemonized service \
+#              to read and upload log files to the Timber hosted service. \
+#              Configuration of the Timber agent is stored in the file \
+#              /etc/timber.toml.
+
+
+
+### BEGIN INIT INFO
+# Provides:               timber-agent
+# Required-Start:         $network $local_fs $remote_fs
+# Required-Stop:          $network $local_fs $remote_fs
+# Should-Start:           $named $time
+# Should-Stop:            $named $time
+# Default-Start:          3 4 5
+# Default-Stop:           0 1 2 6
+# Short-Description:      Starts and stops the Timber agent as a daemonized service
+# Description:            Starts and stops the Timber agent as a daemonized service
+#                         to read and upload log files to the Timber hosted service.
+#                         Configuration of the Timber agent is stored in the file
+#                         /etc/timber.toml.
+### END INIT INFO
+
+. /etc/rc.d/init.d/functions
+
+prog="timber-agent"
+exec=/opt/timber-agent/bin/timber-agent
+
+# Do NOT change the configuration values below. If you need to override
+# them, instead create a script at /etc/sysconfig/timber-agent which defines
+# the variable with the override value. This file will automatically be
+# included if it is available and the variable assignments will override
+# the defaults below.
+config_file=/etc/timber.toml
+log_file=/var/log/timber-agent.log
+pid_file=/var/run/timber-agent.pid
+
+[ -e /etc/sysconfig/$prog ] && . /etc/sysconfig/$prog
+
+lockfile=/var/lock/subsys/$prog
+
+start() {
+  [ -x $exec ] || exit 5
+  printf "Starting %s: " "$prog"
+  daemon $exec --daemonize --config $config_file --agent-log-file $log_file --pid-file $pid_file
+  retval=$?
+  echo
+  [ $retval -eq 0 ] && touch $lockfile
+  return $retval
+}
+
+stop() {
+  printf "Stopping %s: " "$prog"
+  killproc $prog
+  retval=$?
+  echo
+  [ $retval -eq 0 ] && rm -f $lockfile
+  return $retval
+}
+
+restart() {
+  stop
+  start
+}
+
+reload() {
+  restart
+}
+
+force_reload() {
+  restart
+}
+
+rh_status() {
+  status $prog
+}
+
+rh_status_q() {
+  rh_status >/dev/null 2>&1
+}
+
+case "$1" in
+  start)
+    rh_status_q && exit 0
+    $1
+    ;;
+  stop)
+    rh_status_q || exit 0
+    $1
+    ;;
+  restart)
+    $1
+    ;;
+  reload)
+    rh_status_q || exit 7
+    $1
+    ;;
+  force-reload)
+    force_reload
+    ;;
+  status)
+    rh_status
+    ;;
+  condrestart|try-restart)
+    rh_status_q || exit 0
+    restart
+    ;;
+  *)
+    printf "Usage: %s {start|stop|status|restart|condrestart|try-restart|reload|force-reload}\n" "$0"
+    exit 2
+    ;;
+esac
+exit $?

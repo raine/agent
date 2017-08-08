@@ -1,0 +1,73 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:               timber-agent
+# Required-Start:         $network $local_fs $remote_fs
+# Required-Stop:          $network $local_fs $remote_fs
+# Should-Start:           $named $time
+# Should-Stop:            $named $time
+# Default-Start:          3 4 5
+# Default-Stop:           0 1 2 6
+# Short-Description:      Starts and stops the Timber agent as a daemonized service
+# Description:            Starts and stops the Timber agent as a daemonized service
+#                         to read and upload log files to the Timber hosted service.
+#                         Configuration of the Timber agent is stored in the file
+#                         /etc/timber.toml.
+### END INIT INFO
+
+. /lib/lsb/init-functions
+NAME="timber-agent"
+DAEMON=/opt/timber-agent/bin/timber-agent
+CONFIG_FILE=/etc/timber.toml
+PIDFILE=/var/run/timber-agent.pid
+LOGFILE=/var/log/timber-agent.log
+
+test -x $DAEMON || exit 5
+
+case $1 in
+  start)
+    if [ -e $PIDFILE ]; then
+      status_of_proc -p $PIDFILE $DAEMON "$NAME process" && status="0" || status="$?"
+      if [ $status = "0" ]; then
+        exit
+      fi
+    fi
+
+    log_daemon_msg "Starting the process" "$NAME"
+
+    if start-stop-daemon --start --quiet --oknodo --pidfile $PIDFILE --exec $DAEMON -- $DAEMON --daemonize --config $CONFIG_FILE --pidfile $PIDFILE --agent-log-file $LOGFILE ; then
+      log_end_msg 0
+    else
+      log_end_msg 1
+    fi
+    ;;
+  stop)
+    if [ -e $PIDFILE ]; then
+      status_of_proc -p $PIDFILE $DAEMON "Stopping the $NAME process" && status="0" || status="$?"
+      if [ "$status" = 0 ]; then
+        # Stop the Timber agent by calling 
+        start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE
+        # Remove the PID file but don't fail if it's already gone
+        /bin/rm -rf $PIDFILE
+      fi
+    else
+      log_daemon_msg "$NAME process is not running"
+      log_end_msg 0
+    fi
+    ;;
+  restart)
+    $0 stop && sleep 2 && $0 start
+    ;;
+  status)
+    if [ -e $PIDFILE ]; then
+      status_of_proc -p $PIDFILE $DAEMON "$NAME process" && exit 0 || exit $?
+    else
+      log_daemon_msg "$NAME process is not running"
+      log_end_msg 0
+    fi
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart|status}"
+    exit 2
+    ;;
+esac
