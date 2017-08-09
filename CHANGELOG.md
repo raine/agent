@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
   - Added example startup scripts for SysV style init systems
   - Added an example configuration file at `support/config/timber.basic.toml`
+  - Releases now include `support` files in archives
+  - Releases now include a copy of the README
+  - Releases now include a copy of the CHANGELOG
+  - Releases now include a copy of the LICENSE
 
 ## [0.2.1] - 2017-08-04
 ### Fixed

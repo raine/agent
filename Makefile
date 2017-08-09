@@ -43,6 +43,24 @@ build: clean-build
 		-osarch="netbsd/amd64" \
 		-osarch="openbsd/amd64" \
 		-output "$(build_dir)/$(exec)-$(version)-{{.OS}}-{{.Arch}}/$(exec)/bin/$(exec)"
+	@for f in $$(ls $(build_dir)); do \
+		support_source="$(CURDIR)/support"; \
+		support_dest="$(build_dir)/$$f/$(exec)"; \
+		echo "Copying $$support_source into $$support_dest"; \
+		cp -r $$support_source $$support_dest; \
+		readme_source="$(CURDIR)/README.md"; \
+		readme_dest="$(build_dir)/$$f/$(exec)/"; \
+		echo "Copying $$readme_source into $$readme_dest"; \
+		cp $$readme_source $$readme_dest; \
+		changelog_source="$(CURDIR)/CHANGELOG.md"; \
+		changelog_dest="$(build_dir)/$$f/$(exec)/"; \
+		echo "Copying $$changelog_source into $$changelog_dest"; \
+		cp $$changelog_source $$changelog_dest; \
+		license_source="$(CURDIR)/LICENSE"; \
+		license_dest="$(build_dir)/$$f/$(exec)/"; \
+		echo "Copying $$license_source into $$license_dest"; \
+		cp $$license_source $$license_dest; \
+	done
 
 .PHONY: dist
 dist: clean-dist build
