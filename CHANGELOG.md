@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
   - Added example startup scripts for SysV style init systems
   - Added an example configuration file at `support/config/timber.basic.toml`
+  - Added an example of log rotation configuration to
+    `support/scripts/logrotate.d`
   - Releases now include `support` files in archives
   - Releases now include a copy of the README
   - Releases now include a copy of the CHANGELOG

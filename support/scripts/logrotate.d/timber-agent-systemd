@@ -1,0 +1,9 @@
+/var/log/timber-agent.log {
+  missingok
+  notifempty
+  size 100K
+  rotate 2
+  postrotate
+    systemctl reload-or-restart timber-agent
+  endscript
+}
