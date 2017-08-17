@@ -1,10 +1,10 @@
 package main
 
 import (
-	"io"
-
+	"errors"
+	"fmt"
 	"github.com/BurntSushi/toml"
-	"gopkg.in/urfave/cli.v1"
+	"io"
 )
 
 type fileConfig struct {
@@ -22,13 +22,25 @@ type Config struct {
 	CollectEC2MetadataDisabled bool `toml:"disable_ec2_metadata"`
 }
 
-func readConfig(in io.Reader) (*Config, error) {
+// parseConfig takes an io.Reader which should contain TOML formatted data.
+// An error will be returned if the data is not valid TOML
+func parseConfig(in io.Reader) (*Config, error) {
 	var config Config
 
 	if _, err := toml.DecodeReader(in, &config); err != nil {
 		return nil, err
 	}
 
+	return &config, nil
+}
+
+// normalizeConfig takes a Config pointer and normalizes it for use by setting
+// zero values to sensible defaults
+//
+// normalizeConfig should be called after parseConfig to produce a usable
+// Config struct. Even with a zero-value Config struct, the normalization
+// will make it usable.
+func normalizeConfig(config *Config) {
 	if config.BatchPeriodSeconds == 0 {
 		config.BatchPeriodSeconds = 10
 	}
@@ -45,18 +57,24 @@ func readConfig(in io.Reader) (*Config, error) {
 		}
 	}
 
-	return &config, nil
+	return
 }
 
-func validateConfig(config *Config, ctx *cli.Context) error {
-	if ctx.IsSet("stdin") {
-		if !ctx.IsSet("api-key") {
-			return cli.NewExitError("--stdin requires --api-key or TIMBER_API_KEY set", 1)
-		}
-	} else {
-		if ctx.IsSet("api-key") {
-			return cli.NewExitError("--api-key is only for use with --stdin", 1)
+func validateConfigFiles(config *Config) error {
+	for _, f := range config.Files {
+		if f.ApiKey == "" {
+			errText := fmt.Sprintf("File %s has no API key", f.Path)
+			return errors.New(errText)
 		}
 	}
+	return nil
+}
+
+func validateConfigStdin(config *Config) error {
+	if config.DefaultApiKey == "" {
+		errText := "No API key. Please use --api-key, TIMBER_API_KEY, or set a default in a config file"
+		return errors.New(errText)
+	}
+
 	return nil
 }

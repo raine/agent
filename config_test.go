@@ -5,24 +5,7 @@ import (
 	"testing"
 )
 
-func TestDefaults(t *testing.T) {
-	empty := strings.NewReader("")
-
-	config, err := readConfig(empty)
-	if err != nil {
-		panic(err)
-	}
-
-	if config.Endpoint != "https://logs.timber.io/frames" {
-		t.Error("endpoint was not defaulted")
-	}
-
-	if config.BatchPeriodSeconds != 10 {
-		t.Error("batch period was not defaulted")
-	}
-}
-
-func TestFileSpecificApiKey(t *testing.T) {
+func TestparseConfigSpecificApiKey(t *testing.T) {
 	configString := `
 [[files]]
 path = "/var/log/log.log"
@@ -31,7 +14,7 @@ api_key = "abc:1234"
 
 	configFile := strings.NewReader(configString)
 
-	config, err := readConfig(configFile)
+	config, err := parseConfig(configFile)
 
 	if err != nil {
 		panic(err)
@@ -52,27 +35,51 @@ api_key = "abc:1234"
 	}
 }
 
-func TestDefaultFileApiKey(t *testing.T) {
+func TestparseConfigDefaultApiKey(t *testing.T) {
 	configString := `
 default_api_key = "zyx:0987"
-[[files]]
-path = "/var/log/log.log"
 `
 
 	configFile := strings.NewReader(configString)
 
-	config, err := readConfig(configFile)
+	config, err := parseConfig(configFile)
 
 	if err != nil {
 		panic(err)
 	}
 
-	expectedFileCount := 1
-	fileCount := len(config.Files)
+	expectedDefaultApiKey := "zyx:0987"
+	defaultApiKey := config.DefaultApiKey
 
-	if fileCount != expectedFileCount {
-		t.Fatalf("Expected %d files from configuration but %d reported", expectedFileCount, fileCount)
+	if defaultApiKey != expectedDefaultApiKey {
+		t.Errorf("Expected DefaultApiKey to be %s but got %s", expectedDefaultApiKey, defaultApiKey)
 	}
+}
+
+func TestnormalizeConfigSetsDefaults(t *testing.T) {
+	config := &Config{}
+	normalizeConfig(config)
+
+	if config.Endpoint != "https://logs.timber.io/frames" {
+		t.Error("endpoint was not defaulted")
+	}
+
+	if config.BatchPeriodSeconds != 10 {
+		t.Error("batch period was not defaulted")
+	}
+}
+
+func TestnormalizeConfigDefaultFileApiKey(t *testing.T) {
+	config := &Config{
+		DefaultApiKey: "zyx:0987",
+		Files: []fileConfig{
+			fileConfig{
+				Path: "/var/log/log.log",
+			},
+		},
+	}
+
+	normalizeConfig(config)
 
 	expectedApiKey := "zyx:0987"
 	apiKey := config.Files[0].ApiKey
@@ -82,26 +89,16 @@ path = "/var/log/log.log"
 	}
 }
 
-func TestNoApiKey(t *testing.T) {
-	configString := `
-[[files]]
-path = "/var/log/log.log"
-`
-
-	configFile := strings.NewReader(configString)
-
-	config, err := readConfig(configFile)
-
-	if err != nil {
-		panic(err)
+func TestnormalizeConfigNoApiKey(t *testing.T) {
+	config := &Config{
+		Files: []fileConfig{
+			fileConfig{
+				Path: "/var/log/log.log",
+			},
+		},
 	}
 
-	expectedFileCount := 1
-	fileCount := len(config.Files)
-
-	if fileCount != expectedFileCount {
-		t.Fatalf("Expected %d files from configuration but %d reported", expectedFileCount, fileCount)
-	}
+	normalizeConfig(config)
 
 	expectedApiKey := ""
 	apiKey := config.Files[0].ApiKey

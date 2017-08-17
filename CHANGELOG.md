@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+  - Running `timber-agent` without a sub-command will now result in the help
+    message being printed
+  - The `--stdin` global switch has been replaced with the `capture-stdin`
+    sub-command.
+  - To capture log files defined in a configuration file, use the `capture-files`
+    sub-command. This was previously the default operation when `--stdin` was
+    not specified.
+
+### Fixed
+  - Capturing log data over stdin no longer requires a config file. A config file
+    can still be set if you want to use it to provide an API key, override the
+    hostname, or disable EC2 metadata collection
+  - The `--daemonize` switch can no longer be used with capturing stdin
+
 
 ## [0.3.0] - 2017-08-09
 ### Added

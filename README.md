@@ -1,6 +1,7 @@
 # timber-agent
 
-This is a simple daemon that forwards logs to the timber.io service.
+The Timber Agent is a utility for capturing log data and sending it to
+Timber.io.
 
 ## Quickstart
 
@@ -20,8 +21,9 @@ path = "/var/log/app3.log"
 api_key = "different-api-key" # send this file to a different Timber application
 ```
 
-Then simply run the agent and it will tail the given file, forwarding its
-contents to the timber service using the provided API key.
+Now, you can run the agent using `timber-agent capture-files`. The agent will
+start in the foreground and begin capturing any new data written to the
+specified files.
 
 The agent will pick up the hostname of your server by default, but you can
 explicitly set the hostname you want it to use with your logs by providing
@@ -40,23 +42,56 @@ NAME:
    timber-agent - forwards logs to timber.io
 
 USAGE:
-   agent [global options] command [command options] [arguments...]
+   timber-agent [global options] command [command options] [arguments...]
 
 VERSION:
    0.3.0
 
 COMMANDS:
-     help, h  Shows a list of commands or help for one command
+     capture-stdin  Captures log data sent over STDIN and forwards to Timber's log collection endpoint
+     capture-files  
+     help, h        Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
+   --help, -h     show help
+   --version, -v  print the version
+```
+
+### capture-stdin
+
+```
+NAME:
+   timber-agent capture-stdin - Captures log data sent over STDIN and forwards to Timber's log collection endpoint
+
+USAGE:
+   timber-agent capture-stdin [command options] [arguments...]
+
+OPTIONS:
+   --api-key value           timber API key to use when capturing stdin [$TIMBER_API_KEY]
    --config value, -c value  config file to use (default: "/etc/timber.toml")
-   --pidfile PIDFILE         will store the pid in PIDFILE when set
-   --agent-log-file value    file path to store logs (will use STDOUT if blank)
+   --output-log-file FILE    the agent will write its own logs to FILE (will use STDOUT if not provided)
+   --pidfile FILE            will store the pid in FILE when set
+
+```
+
+### capture-files
+
+```
+NAME:
+   timber-agent capture-files -
+
+USAGE:
+   timber-agent capture-files [command options] [arguments...]
+
+DESCRIPTION:
+   Captures log data from files declared in configuration and forwards to Timber's log collection endpoint
+
+OPTIONS:
+   --config value, -c value  config file to use (default: "/etc/timber.toml")
    --daemonize               starts an instance of agent as a daemon (only available on Linux; see documentation)
-   --stdin                   read logs from stdin instead of tailing files
-   --api-key value           timber API key to use when forwarding stdin [$TIMBER_API_KEY]
-   --help, -h                show help
-   --version, -v             print the version
+   --output-log-file FILE    the agent will write its own logs to FILE (will use STDOUT if not provided)
+   --pidfile FILE            will store the pid in FILE when set
+
 ```
 
 ## Contributing

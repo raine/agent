@@ -187,7 +187,7 @@ type ReaderTailer struct {
 	lines chan string
 }
 
-func NewReaderTailer(r io.Reader, quit chan bool) ReaderTailer {
+func NewReaderTailer(r io.Reader, quit chan bool) *ReaderTailer {
 	ch := make(chan string)
 	innerCh := make(chan string)
 	scanner := bufio.NewScanner(r)
@@ -218,7 +218,7 @@ func NewReaderTailer(r io.Reader, quit chan bool) ReaderTailer {
 		}
 	}()
 
-	return ReaderTailer{lines: ch}
+	return &ReaderTailer{lines: ch}
 }
 
 func (r *ReaderTailer) Lines() chan string {

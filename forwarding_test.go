@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 )
 
-func TestForwarding(test *testing.T) {
+func TestForwardForwarding(test *testing.T) {
 	bufChan := make(chan *bytes.Buffer, 1)
 	bufChan <- bytes.NewBufferString("test log line\n")
 	close(bufChan)
@@ -32,10 +32,10 @@ func TestForwarding(test *testing.T) {
 	}))
 	defer ts.Close()
 
-	Forward(bufChan, retryablehttp.NewClient(), ts.URL, "api key", []byte(""))
+	Forward(bufChan, retryablehttp.NewClient(), ts.URL, "api key", "")
 }
 
-func TestRetries(test *testing.T) {
+func TestForwardRetries(test *testing.T) {
 	bufChan := make(chan *bytes.Buffer, 1)
 	bufChan <- bytes.NewBufferString("test log line\n")
 	close(bufChan)
@@ -54,29 +54,30 @@ func TestRetries(test *testing.T) {
 	client := retryablehttp.NewClient()
 	client.RetryWaitMin = 0
 
-	Forward(bufChan, client, ts.URL, "api key", []byte(""))
+	Forward(bufChan, client, ts.URL, "api key", "")
 
 	if retries != 1 {
 		test.Fatalf("expected 1 retry, got %d", retries)
 	}
 }
 
-func TestMetadata(test *testing.T) {
+func TestForwardMetadata(test *testing.T) {
 	bufChan := make(chan *bytes.Buffer, 1)
 	bufChan <- bytes.NewBufferString("test log line\n")
 	close(bufChan)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-
 		expected := "Metadata test"
 		actual := r.Header.Get("Timber-Metadata-Override")
 
 		if actual != expected {
 			test.Fatalf("expected \"%+v\", got \"%+v\"", expected, actual)
 		}
+
+		w.WriteHeader(200)
 	}))
+
 	defer ts.Close()
 
-	Forward(bufChan, retryablehttp.NewClient(), ts.URL, "api key", []byte("Metadata test"))
+	Forward(bufChan, retryablehttp.NewClient(), ts.URL, "api key", "Metadata test")
 }

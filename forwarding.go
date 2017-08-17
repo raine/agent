@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 )
 
-func Forward(bufChan chan *bytes.Buffer, client *retryablehttp.Client, endpoint, apiKey string, metadata []byte) {
+func Forward(bufChan chan *bytes.Buffer, client *retryablehttp.Client, endpoint, apiKey string, metadata string) {
 	token := base64.StdEncoding.EncodeToString([]byte(apiKey))
 	for buf := range bufChan {
 		req, err := retryablehttp.NewRequest("POST", endpoint, bytes.NewReader(buf.Bytes()))
@@ -19,7 +19,7 @@ func Forward(bufChan chan *bytes.Buffer, client *retryablehttp.Client, endpoint,
 
 		req.Header.Add("Content-Type", "text/plain")
 		req.Header.Add("Authorization", fmt.Sprintf("Basic %s", token))
-		req.Header.Add("Timber-Metadata-Override", string(metadata))
+		req.Header.Add("Timber-Metadata-Override", metadata)
 
 		resp, err := client.Do(req)
 		if err != nil {
