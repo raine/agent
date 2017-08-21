@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - To capture log files defined in a configuration file, use the `capture-files`
     sub-command. This was previously the default operation when `--stdin` was
     not specified.
+  - The flag `--agent-log-file` has been renamed `--output-log-file`
 
 ### Fixed
   - Capturing log data over stdin no longer requires a config file. A config file
