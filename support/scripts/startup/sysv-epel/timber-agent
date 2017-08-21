@@ -46,7 +46,7 @@ lockfile=/var/lock/subsys/$prog
 start() {
   [ -x $exec ] || exit 5
   printf "Starting %s: " "$prog"
-  daemon $exec --daemonize --config $config_file --agent-log-file $log_file --pid-file $pid_file
+  daemon $exec capture-files --daemonize --config $config_file --output-log-file $log_file --pidfile $pid_file
   retval=$?
   echo
   [ $retval -eq 0 ] && touch $lockfile
