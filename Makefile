@@ -76,8 +76,10 @@ dist: clean-dist build
 .PHONY: release
 release: dist
 	@tag=v$(version); \
-	changelog=$$(git show -s $$tag --pretty=tformat:%N | sed -e '1,3d'); \
-	github-release $(github_repo) $$tag master $$changelog '$(dist_dir)/*';
+	commit=$(git rev-list -n 1 $$tag); \
+	name=$$(git show -s $$tag --pretty=tformat:%N | sed -e '4q;d'); \
+	changelog=$$(git show -s $$tag --pretty=tformat:%N | sed -e '1,5d'); \
+	grease create-release --name "$$name" --notes "$$changelog" --assets "dist/*" $(github_repo) "$$tag" "$$commit"
 	$(eval FILES := $(shell ls $(dist_dir)))
 	@for exact_filename in $(FILES); do \
 		rel=$$(echo $$exact_filename | sed "s/\.tar\.gz//"); \
@@ -97,7 +99,7 @@ release: dist
 		aws s3 cp $(dist_dir)/$$exact_filename $$latest_minor_destination; \
 	done
 
-.PHONY: release
+.PHONY: get-tools
 get-tools:
 	go get github.com/golang/dep/cmd/dep
 	go get github.com/c4milo/github-release
