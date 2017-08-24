@@ -102,7 +102,6 @@ release: dist
 .PHONY: get-tools
 get-tools:
 	go get github.com/golang/dep/cmd/dep
-	go get github.com/c4milo/github-release
 	go get github.com/mitchellh/gox
 	go get github.com/jstemmer/go-junit-report
 
