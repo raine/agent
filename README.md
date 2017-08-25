@@ -1,23 +1,50 @@
-# timber-agent
+# Timber Agent
 
-The Timber Agent is a utility for capturing log data and sending it to
-Timber.io.
+[![Built by Timber.io](https://res.cloudinary.com/timber/image/upload/v1503615886/built_by_timber_wide.png)](https://timber.io/?utm_source=github&utm_campaign=timberio%2Fagent)
+
+[![GitHub release](https://img.shields.io/github/release/timberio/agent.svg)](https://github.com/timberio/agent/releases/latest) [![license](https://img.shields.io/github/license/timberio/agent.svg)](https://github.com/timberio/agent/blob/master/LICENSE) [![CircleCI](https://img.shields.io/circleci/project/github/timberio/agent.svg)](https://circleci.com/gh/timberio/agent/tree/master)
+
+The Timber Agent is a cross-platform utility for capturing log data and
+sending it to Timber.io. It can be configured to watch log files for new
+data or accept data over standard input (STDIN).
+
+## Installing the Agent
+
+Instructions for installing the agent are dependent on your target system.
+
+Pre-compiled 64-bit binaries are available in distribution archives for
+Linux, macOS, FreeBSD, NetBSD, and OpenBSD from the [repository's releases
+page](https://github.com/timberio/agent/releases). The distribution packages
+also contain example configuration and startup scripts.
+
+Unpacking the distribution archive will leave you with a `timber-agent`
+directory that should be placed in a common location like `/opt`. (The
+instructions below will assume you place it in `/opt`; if you place it somewhere
+different, you will need to adjust the paths appropriately.)
+
+The binary for the agent will be located at `/opt/timber-agent/bin/timber-agent`.
+The only requirement to run the agent (see Usage below), is a configuration
+file. The agent will look for a configuration file at `/etc/timber.toml` by
+default. If you use a different location, specify it using the `--config` flag.
+
+An example configuration file is included at
+`/opt/timber-agent/support/config/timber.basic.toml`.
 
 ## Quickstart
 
 Create a file at `/etc/timber.toml` and specify the following options:
 
 ```toml
-default_api_key = "mytimberapikey"
+default_api_key = "timberapikey"
 
 [[files]]
-path = "/var/log/app1.log"
+path = "/var/log/app/ruby.log"
 
 [[files]]
-path = "/var/log/app2.log"
+path = "/var/log/app/puma.log"
 
 [[files]]
-path = "/var/log/app3.log"
+path = "/var/log/nginx/access.log"
 api_key = "different-api-key" # send this file to a different Timber application
 ```
 
@@ -33,8 +60,7 @@ a `hostname` key at the top of the file:
 hostname = "worker-a.us-east-1.example.com"
 ```
 
-## Configuration
-
+## Usage
 Run `timber-agent help` to see the available options:
 
 ```
@@ -114,3 +140,4 @@ statically linked into the executable at compile time. This third-party code is
 redistributed without modification and made available to all users  under the
 terms of each project's original license within the `vendor` directory of the
 project.
+
