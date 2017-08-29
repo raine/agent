@@ -71,7 +71,7 @@ USAGE:
    timber-agent [global options] command [command options] [arguments...]
 
 VERSION:
-   0.4.0
+   0.4.1
 
 COMMANDS:
      capture-stdin  Captures log data sent over STDIN and forwards to Timber's log collection endpoint
