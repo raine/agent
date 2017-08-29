@@ -1,0 +1,12 @@
+[Unit]
+Description=Timber.io agent for log collection
+After=local-fs.target remote-fs.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/timber-agent/bin/timber-agent capture-files --config /etc/timber.toml --output-log-file /var/log/timber-agent.log --pidfile /var/run/timber-agent.pid
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
