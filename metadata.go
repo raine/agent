@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 )
 
@@ -14,13 +13,13 @@ func BuildBaseMetadata(config *Config) *LogEvent {
 
 	if config.Hostname != "" {
 		hostname = config.Hostname
-		log.Printf("Discovered hostname from config file: %s", hostname)
+		logger.Infof("Discovered hostname from config file: %s", hostname)
 	} else {
 		if os_hostname, err := os.Hostname(); err != nil {
-			log.Println("Could not autodiscover hostname from operating system")
+			logger.Warn("Could not autodiscover hostname from operating system")
 		} else {
 			hostname = os_hostname
-			log.Printf("Discovered hostname from system: %s", hostname)
+			logger.Infof("Discovered hostname from system: %s", hostname)
 		}
 	}
 
@@ -30,7 +29,7 @@ func BuildBaseMetadata(config *Config) *LogEvent {
 		client := GetEC2Client()
 		AddEC2Metadata(client, logEvent)
 	} else {
-		log.Println("AWS EC2 metadata collection disabled in config file")
+		logger.Info("AWS EC2 metadata collection disabled in config file")
 	}
 
 	return logEvent

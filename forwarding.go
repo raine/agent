@@ -4,34 +4,90 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"log"
+	"os"
+	"path"
+	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
 )
 
-func Forward(bufChan chan *bytes.Buffer, client *retryablehttp.Client, endpoint, apiKey string, metadata string) {
+var defaultHTTPClient = retryablehttp.NewClient()
+
+func init() {
+	defaultHTTPClient.HTTPClient.Timeout = 10 * time.Second
+}
+
+func Forward(bufChan chan *bytes.Buffer, httpClient *retryablehttp.Client, endpoint, apiKey string, metadata string) {
+	// Set the logger when the function is called to ensure we pickup any logger changes.
+	httpClient.Logger = standardLoggerAlternative
 	token := base64.StdEncoding.EncodeToString([]byte(apiKey))
+
 	for buf := range bufChan {
 		req, err := retryablehttp.NewRequest("POST", endpoint, bytes.NewReader(buf.Bytes()))
 		if err != nil {
-			log.Fatal(err)
+			logger.Fatal(err)
 		}
 
 		req.Header.Add("Content-Type", "text/plain")
 		req.Header.Add("Authorization", fmt.Sprintf("Basic %s", token))
 		req.Header.Add("Timber-Metadata-Override", metadata)
 
-		resp, err := client.Do(req)
+		resp, err := httpClient.Do(req)
 		if err != nil {
 			// retries have already happened at this point, so give up
-			log.Fatal(err)
+			logger.Fatal(err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			log.Printf("flushed buffer (status code %d)", resp.StatusCode)
+			logger.Infof("flushed buffer (status code %d)", resp.StatusCode)
 		} else {
-			log.Fatalf("unexpected response (status code %d)", resp.StatusCode)
+			logger.Fatalf("unexpected response (status code %d)", resp.StatusCode)
 		}
 	}
+}
+
+func ForwardStdin(endpoint string, apiKey string, batchPeriodSeconds int64, metadata *LogEvent, quit chan bool) error {
+	encodedMetadata, err := metadata.EncodeJSON()
+	if err != nil {
+		// If there was an error encoding to JSON, we do not add it to the sources
+		// list and therefore do not tail it
+		logger.Error("Failed to encode additional metadata as JSON while preparing to tail STDIN")
+		return err
+	}
+
+	encodedMetadataString := string(encodedMetadata)
+	bufChan := make(chan *bytes.Buffer)
+	tailer := NewReaderTailer(os.Stdin, quit)
+	go Batch(tailer.Lines(), bufChan, batchPeriodSeconds)
+	Forward(bufChan, defaultHTTPClient, endpoint, apiKey, encodedMetadataString)
+
+	return nil
+}
+
+func ForwardFile(filePath string, endpoint string, apiKey string, poll bool, batchPeriodSeconds int64, metadata *LogEvent, quit chan bool) error {
+	// Takes the base of the file's path so that "/var/log/apache2/access.log"
+	// becomes "access.log"
+	fileName := path.Base(filePath)
+
+	// Makes a copy of the metadata; we only want set the filename on the
+	// local copy of the metadata
+	localMetadata := *metadata // localMetadata is of type LogEvent
+	md := &localMetadata       // md is of type *LogEvent
+	md.Context.Source.FileName = fileName
+	encodedMetadata, err := md.EncodeJSON()
+	if err != nil {
+		// If there was an error encoding to JSON, we do not add it to the sources
+		// list and therefore do not tail it
+		logger.Errorf("Failed to encode additional metadata as JSON while preparing to tail %s", filePath)
+		return err
+	}
+
+	encodedMetadataString := string(encodedMetadata)
+	bufChan := make(chan *bytes.Buffer)
+	tailer := NewFileTailer(filePath, poll, quit)
+	go Batch(tailer.Lines(), bufChan, batchPeriodSeconds)
+	Forward(bufChan, defaultHTTPClient, endpoint, apiKey, encodedMetadataString)
+
+	return nil
 }

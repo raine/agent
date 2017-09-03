@@ -4,55 +4,71 @@
 
 [![GitHub release](https://img.shields.io/github/release/timberio/agent.svg)](https://github.com/timberio/agent/releases/latest) [![license](https://img.shields.io/github/license/timberio/agent.svg)](https://github.com/timberio/agent/blob/master/LICENSE) [![CircleCI](https://img.shields.io/circleci/project/github/timberio/agent.svg)](https://circleci.com/gh/timberio/agent/tree/master)
 
-The Timber Agent is a cross-platform utility for capturing log data and
-sending it to Timber.io. It can be configured to watch log files for new
-data or accept data over standard input (STDIN).
+The Timber Agent is a cross-platform natively-compiled utility for capturing log data
+(file & STDIN) and sending it to Timber.io. It is designed to be light weight, highly efficient,
+and reliable without the need for dependencies.
 
-## Installing the Agent
+1. [**Installation**](#installation)
+2. [**Usage**](#usage)
+3. [**Configuration**](#configuration)
+4. [**Contributing**](#contributing)
 
-Instructions for installing the agent are dependent on your target system.
 
-Pre-compiled 64-bit binaries are available in distribution archives for
-Linux, macOS, FreeBSD, NetBSD, and OpenBSD from the [repository's releases
-page](https://github.com/timberio/agent/releases). The distribution packages
-also contain example configuration and startup scripts.
+## Installation
 
-Unpacking the distribution archive will leave you with a `timber-agent`
-directory that should be placed in a common location like `/opt`. (The
-instructions below will assume you place it in `/opt`; if you place it somewhere
-different, you will need to adjust the paths appropriately.)
+1. Download the archive for your architecture:
 
-The binary for the agent will be located at `/opt/timber-agent/bin/timber-agent`.
-The only requirement to run the agent (see Usage below), is a configuration
-file. The agent will look for a configuration file at `/etc/timber.toml` by
-default. If you use a different location, specify it using the `--config` flag.
+    ```shell
+    curl -LO {{choose-url-below}}
+    ```
 
-An example configuration file is included at
-`/opt/timber-agent/support/config/timber.basic.toml`.
+    * [Darwin AMD64 latest](https://packages.timber.io/agent/0.x.x/darwin-amd64/timber-agent-0.x.x-darwin-amd64.tar.gz)
+    * [FreeBSD AMD64 latest](https://packages.timber.io/agent/0.x.x/freebsd-amd64/timber-agent-0.x.x-freebsd-amd64.tar.gz)
+    * [Linux AMD64 latest](https://packages.timber.io/agent/0.x.x/linux-amd64/timber-agent-0.x.x-linux-amd64.tar.gz)
+    * [Netbsd AMD64 latest](https://packages.timber.io/agent/0.x.x/netbsd-amd64/timber-agent-0.x.x-netbsd-amd64.tar.gz)
+    * [Openbsd AMD64 latest](https://packages.timber.io/agent/0.x.x/openbsd-amd64/timber-agent-0.x.x-openbsd-amd64.tar.gz)
 
-## Quickstart
+    All releases can be found [here](https://github.com/timberio/agent/releases). Special URLs that point to the current releases can be found [here](https://timber.io/docs/platforms/other/agent/versioning).
 
-Create a file at `/etc/timber.toml` and specify the following options:
+2. Unpack the archive to a common location like `/opt`:
 
-```toml
-default_api_key = "timberapikey"
+    ```shell
+    tar -xzf timber-agent-0.x.x-darwin-amd64.tar.gz -C /opt
+    ```
 
-[[files]]
-path = "/var/log/app/ruby.log"
+    The agent will be located at `/opt/timber-agent/bin/timber-agent`.
 
-[[files]]
-path = "/var/log/app/puma.log"
+3. Move the `timber.toml` file to `/etc`:
 
-[[files]]
-path = "/var/log/nginx/access.log"
-api_key = "different-api-key" # send this file to a different Timber application
-```
+    ```shell
+    cp /opt/timber-agent/support/config/timber.basic.toml /etc/timber.toml
+    ```
 
-Now, you can run the agent using `timber-agent capture-files`. The agent will
-start in the foreground and begin capturing any new data written to the
-specified files.
+4. In `/etc/timber.toml` replace `MY_TIMBER_API_KEY` with your API key. [*Don't have a key?*](https://timber.io/docs/app/applications/obtaining-api-key)
 
-The agent will pick up the hostname of your server by default, but you can
+    ```shell
+    sed -i 's/MY_TIMBER_API_KEY/{{my-timber-api-key}}/g' /etc/timber.toml
+    ```
+
+    *Be sure to replace `{{my-timber-api-key}}` in the command above with your _actual_ API key.*
+
+5. In `/etc/timber.toml` update the `[[files]]` entries to forward your chosen files.
+
+6. Start the `timber-agent`:
+
+    ```shell
+    /opt/timber-agent/bin/timber-agent capture-files
+    ```
+
+    Checkout the [usage section](#usage) as well as the [startup scripts directory](https://github.com/timberio/agent/tree/master/support/scripts/startup) to assist with starting and stopping the agent.
+
+
+#### How it works
+
+The agent will start in the foreground and begin capturing any new data written to
+the specified files.
+
+The agent will also pick up the hostname of your server by default, but you can
 explicitly set the hostname you want it to use with your logs by providing
 a `hostname` key at the top of the file:
 
@@ -60,7 +76,11 @@ a `hostname` key at the top of the file:
 hostname = "worker-a.us-east-1.example.com"
 ```
 
+See [configuration](#configuration) below for more details.
+
+
 ## Usage
+
 Run `timber-agent help` to see the available options:
 
 ```
@@ -75,7 +95,7 @@ VERSION:
 
 COMMANDS:
      capture-stdin  Captures log data sent over STDIN and forwards to Timber's log collection endpoint
-     capture-files  
+     capture-files
      help, h        Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
@@ -94,7 +114,7 @@ USAGE:
 
 OPTIONS:
    --api-key value           timber API key to use when capturing stdin [$TIMBER_API_KEY]
-   --config value, -c value  config file to use (default: "/etc/timber.toml")
+   --config value, -c value  config file to use, for available options see https://timber.io/docs/platforms/other/agent/configuration-file (default: "/etc/timber.toml")
    --output-log-file FILE    the agent will write its own logs to FILE (will use STDOUT if not provided)
    --pidfile FILE            will store the pid in FILE when set
 
@@ -113,12 +133,20 @@ DESCRIPTION:
    Captures log data from files declared in configuration and forwards to Timber's log collection endpoint
 
 OPTIONS:
-   --config value, -c value  config file to use (default: "/etc/timber.toml")
+   --config value, -c value  config file to use, for available options see https://timber.io/docs/platforms/other/agent/configuration-file (default: "/etc/timber.toml")
    --daemonize               starts an instance of agent as a daemon (only available on Linux; see documentation)
    --output-log-file FILE    the agent will write its own logs to FILE (will use STDOUT if not provided)
    --pidfile FILE            will store the pid in FILE when set
 
 ```
+
+
+## Configuration
+
+Outside of the usage options specified above, the agent takes a config file.
+The default path for this config file is `/etc/timber.toml`. Avilable options
+can be found in [our docs](https://timber.io/docs/platforms/other/agent/configuration-file).
+
 
 ## Contributing
 

@@ -20,6 +20,9 @@ import (
 // expected to log the error message and exit.
 func Daemonize() error {
 	_, _, err := godaemon.MakeDaemon(&godaemon.DaemonAttr{})
+	if err != nil {
+		logger.Errorf("Failed to daemonize: %s", err)
+	}
 
 	return err
 }

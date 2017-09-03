@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+
+  - Added support for globbing in file paths. Periodic checks ensure new files are recognized as well.
+
+### Fixed
+
+  - Resolves an issue where only the last file in the [[files]] array was being forwarded to Timber.io.
 
 ## [0.4.1] - 2017-08-29
 ### Added
@@ -14,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [0.4.0] - 2017-08-21
 ### Changed
+
   - Running `timber-agent` without a sub-command will now result in the help
     message being printed
   - The `--stdin` global switch has been replaced with the `capture-stdin`
@@ -24,6 +32,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - The flag `--agent-log-file` has been renamed `--output-log-file`
 
 ### Fixed
+
   - Capturing log data over stdin no longer requires a config file. A config file
     can still be set if you want to use it to provide an API key, override the
     hostname, or disable EC2 metadata collection

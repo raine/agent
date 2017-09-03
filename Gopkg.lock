@@ -23,7 +23,13 @@
   branch = "master"
   name = "github.com/hashicorp/go-retryablehttp"
   packages = ["."]
-  revision = "2d5f5dbd904dbad432492c3ca2c12c72c9e3045a"
+  revision = "794af36148bf63c118d6db80eb902a136b907e71"
+
+[[projects]]
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
+  version = "v1.0.3"
 
 [[projects]]
   name = "github.com/timberio/tail"
@@ -32,9 +38,15 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["ssh/terminal"]
+  revision = "81e90905daefcd6fd217b62423c0908922eadb30"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix"]
-  revision = "abf9c25f54453410d0c6668e519582a9e1115027"
+  packages = ["unix","windows"]
+  revision = "7ddbeae9ae08c6a06a59597f0c9edbc5ff2444ce"
 
 [[projects]]
   name = "gopkg.in/fsnotify.v1"
@@ -51,12 +63,12 @@
 [[projects]]
   name = "gopkg.in/urfave/cli.v1"
   packages = ["."]
-  revision = "0bdeddeeb0f650497d603c4ad7b20cfe685682f6"
-  version = "v1.19.1"
+  revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
+  version = "v1.20.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "bec89d97bf62cceb00cdc1979d2ce5a8c06ce459e979e4b72bae74ed1038268d"
+  inputs-digest = "e9247baaf04ddd79e81ea155cb000ad1606147ec09c4860e5c737f2e9e510b2f"
   solver-name = "gps-cdcl"
   solver-version = 1

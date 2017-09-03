@@ -1,0 +1,23 @@
+# This is an example Timber agent configuration that shows how to route
+# different files to different Timber applications. Notice the `api_key`
+# override. This tells Timber to use this API key for that specific file.
+# If `api_key` is not provided `default_api_key` is used.
+#
+# Your Timber API key can be found by creating an app within Timber at:
+# https://app.timber.io
+#
+# All configuration options can be found at:
+# https://timber.io/docs/platforms/other/agent/configuration-file
+
+default_api_key = "MY_DEFAULT_TIMBER_API_KEY"
+
+[[files]]
+path = "/var/log/yum.log" # globbing is supported
+
+[[files]]
+path = "/path/to/other.log"
+api_key = "OTHER_TIMBER_API_KEY"
+
+[[files]]
+path = "/path/to/another.log"
+api_key = "ANOTHER_TIMBER_API_KEY"

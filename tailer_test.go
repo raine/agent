@@ -5,13 +5,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 	"time"
 )
-
-var logger = log.New(os.Stderr, "", 0)
 
 func TestFileTailer(test *testing.T) {
 	file, err := ioutil.TempFile("", "timber-agent-test")
@@ -20,7 +17,7 @@ func TestFileTailer(test *testing.T) {
 	}
 	defer os.Remove(file.Name())
 
-	tailer := NewFileTailer(file.Name(), true, nil, logger)
+	tailer := NewFileTailer(file.Name(), true, nil)
 	time.Sleep(5 * time.Millisecond)
 
 	go sendLines(file, generateLogLines("test", 100))
@@ -64,7 +61,7 @@ func TestFileTailerPersistsState(test *testing.T) {
 	quit := make(chan bool)
 
 	// with no state file, tail should start at the end
-	firstTailer := NewFileTailer(file.Name(), true, quit, logger)
+	firstTailer := NewFileTailer(file.Name(), true, quit)
 	time.Sleep(5 * time.Millisecond)
 
 	go sendLines(file, generateLogLines("one", 10))
@@ -77,7 +74,7 @@ func TestFileTailerPersistsState(test *testing.T) {
 	time.Sleep(5 * time.Millisecond)
 
 	// with state file, start from previous spot
-	secondTailer := NewFileTailer(file.Name(), true, quit, logger)
+	secondTailer := NewFileTailer(file.Name(), true, quit)
 	time.Sleep(5 * time.Millisecond)
 
 	go sendLines(file, generateLogLines("three", 10))
@@ -91,7 +88,7 @@ func TestFileTailerPersistsState(test *testing.T) {
 	time.Sleep(5 * time.Millisecond)
 
 	// after multiple runs, state file should contain most recent state
-	thirdTailer := NewFileTailer(file.Name(), true, quit, logger)
+	thirdTailer := NewFileTailer(file.Name(), true, quit)
 	time.Sleep(5 * time.Millisecond)
 
 	go sendLines(file, generateLogLines("five", 10))
@@ -126,7 +123,7 @@ func TestFileTailerIgnoresStateAfterRotation(test *testing.T) {
 	quit := make(chan bool)
 
 	// with no state file, tail should start at the end
-	firstTailer := NewFileTailer(file.Name(), true, quit, logger)
+	firstTailer := NewFileTailer(file.Name(), true, quit)
 	time.Sleep(5 * time.Millisecond)
 
 	go sendLines(file, generateLogLines("one", 10))
@@ -143,7 +140,7 @@ func TestFileTailerIgnoresStateAfterRotation(test *testing.T) {
 	time.Sleep(5 * time.Millisecond)
 
 	// with state file that doesn't match, start from beginning
-	secondTailer := NewFileTailer(file.Name(), true, quit, logger)
+	secondTailer := NewFileTailer(file.Name(), true, quit)
 	time.Sleep(5 * time.Millisecond)
 
 	go sendLines(file, generateLogLines("three", 10))

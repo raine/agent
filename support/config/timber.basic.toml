@@ -1,8 +1,18 @@
 # This is an example Timber agent configuration that shows a very basic
-# setup. It watches the file /var/log/yum.log and uploads its contents
-# to the Timber Hosted service using the API key
-# "zrtPPH0w3gAkOtwxfKCUUpAH2oprQVfe".
+# setup. It watches all files in the /var/log folder.
+#
+# Your Timber API key can be found by creating an app within Timber at:
+# https://app.timber.io
+#
+# All configuration options can be found at:
+# https://timber.io/docs/platforms/other/agent/configuration-file
+
+default_api_key = "MY_TIMBER_API_KEY"
 
 [[files]]
-path = "/var/log/yum.log"
-api_key = "zrtPPH0w3gAkOtwxfKCUUpAH2oprQVfe"
+path = "/var/log/yum.log" # globbing is supported
+
+# Add as many [[files]] entires as you'd like:
+#
+# [[files]]
+# path = "/path/to/another.log"

@@ -5,17 +5,27 @@ import (
 	"testing"
 )
 
-func TestparseConfigSpecificApiKey(t *testing.T) {
+func TestNewConfigSetsDefaults(t *testing.T) {
+	config := NewConfig()
+
+	if config.Endpoint != "https://logs.timber.io/frames" {
+		t.Error("endpoint was not defaulted")
+	}
+
+	if config.BatchPeriodSeconds != 10 {
+		t.Error("batch period was not defaulted")
+	}
+}
+
+func TestParseConfigSpecificApiKey(t *testing.T) {
 	configString := `
 [[files]]
 path = "/var/log/log.log"
 api_key = "abc:1234"
 `
-
 	configFile := strings.NewReader(configString)
-
-	config, err := parseConfig(configFile)
-
+	config := NewConfig()
+	err := config.UpdateFromReader(configFile)
 	if err != nil {
 		panic(err)
 	}
@@ -35,15 +45,13 @@ api_key = "abc:1234"
 	}
 }
 
-func TestparseConfigDefaultApiKey(t *testing.T) {
+func TestParseConfigDefaultApiKey(t *testing.T) {
 	configString := `
 default_api_key = "zyx:0987"
 `
-
 	configFile := strings.NewReader(configString)
-
-	config, err := parseConfig(configFile)
-
+	config := NewConfig()
+	err := config.UpdateFromReader(configFile)
 	if err != nil {
 		panic(err)
 	}
@@ -56,30 +64,19 @@ default_api_key = "zyx:0987"
 	}
 }
 
-func TestnormalizeConfigSetsDefaults(t *testing.T) {
-	config := &Config{}
-	normalizeConfig(config)
-
-	if config.Endpoint != "https://logs.timber.io/frames" {
-		t.Error("endpoint was not defaulted")
-	}
-
-	if config.BatchPeriodSeconds != 10 {
-		t.Error("batch period was not defaulted")
-	}
-}
-
 func TestnormalizeConfigDefaultFileApiKey(t *testing.T) {
-	config := &Config{
-		DefaultApiKey: "zyx:0987",
-		Files: []fileConfig{
-			fileConfig{
-				Path: "/var/log/log.log",
-			},
-		},
-	}
+	configString := `
+default_api_key = "zyx:0987"
 
-	normalizeConfig(config)
+[[files]]
+path = "/var/log/log.log"
+`
+	configFile := strings.NewReader(configString)
+	config := NewConfig()
+	err := config.UpdateFromReader(configFile)
+	if err != nil {
+		panic(err)
+	}
 
 	expectedApiKey := "zyx:0987"
 	apiKey := config.Files[0].ApiKey
@@ -90,15 +87,16 @@ func TestnormalizeConfigDefaultFileApiKey(t *testing.T) {
 }
 
 func TestnormalizeConfigNoApiKey(t *testing.T) {
-	config := &Config{
-		Files: []fileConfig{
-			fileConfig{
-				Path: "/var/log/log.log",
-			},
-		},
+	configString := `
+[[files]]
+path = "/var/log/log.log"
+`
+	configFile := strings.NewReader(configString)
+	config := NewConfig()
+	err := config.UpdateFromReader(configFile)
+	if err != nil {
+		panic(err)
 	}
-
-	normalizeConfig(config)
 
 	expectedApiKey := ""
 	apiKey := config.Files[0].ApiKey

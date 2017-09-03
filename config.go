@@ -3,18 +3,20 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/BurntSushi/toml"
 	"io"
+	"os"
+
+	"github.com/BurntSushi/toml"
 )
 
-type fileConfig struct {
+type FileConfig struct {
 	Path   string
 	ApiKey string `toml:"api_key"`
 }
 
 type Config struct {
 	DefaultApiKey              string `toml:"default_api_key"`
-	Files                      []fileConfig
+	Files                      []FileConfig
 	Endpoint                   string
 	BatchPeriodSeconds         int64
 	Poll                       bool
@@ -22,59 +24,62 @@ type Config struct {
 	CollectEC2MetadataDisabled bool `toml:"disable_ec2_metadata"`
 }
 
-// parseConfig takes an io.Reader which should contain TOML formatted data.
-// An error will be returned if the data is not valid TOML
-func parseConfig(in io.Reader) (*Config, error) {
-	var config Config
-
-	if _, err := toml.DecodeReader(in, &config); err != nil {
-		return nil, err
-	}
-
-	return &config, nil
+func (c *Config) Log() {
+	logger.Infof("Log Collection Endpoint: %s", c.Endpoint)
+	logger.Infof("Using filesystem polling: %s", c.Poll)
+	logger.Infof("Maximum time between sends: %d seconds", c.BatchPeriodSeconds)
 }
 
-// normalizeConfig takes a Config pointer and normalizes it for use by setting
-// zero values to sensible defaults
-//
-// normalizeConfig should be called after parseConfig to produce a usable
-// Config struct. Even with a zero-value Config struct, the normalization
-// will make it usable.
-func normalizeConfig(config *Config) {
-	if config.BatchPeriodSeconds == 0 {
-		config.BatchPeriodSeconds = 10
+func (c *Config) UpdateFromFile(filePath string) error {
+	configFile, err := os.Open(filePath)
+	if err != nil {
+		logger.Errorf("Could not open config file at %s: %s", filePath, err)
+		return err
 	}
 
-	if config.Endpoint == "" {
-		config.Endpoint = "https://logs.timber.io/frames"
+	logger.Infof("Opened configuration file at %s", filePath)
+
+	return c.UpdateFromReader(configFile)
+}
+
+func (c *Config) UpdateFromReader(in io.Reader) error {
+	_, err := toml.DecodeReader(in, c)
+	if err != nil {
+		return err
 	}
 
 	// If a file does not define its own API key, the default API key
 	// is used
-	for i := range config.Files {
-		if config.Files[i].ApiKey == "" {
-			config.Files[i].ApiKey = config.DefaultApiKey
+	for i := range c.Files {
+		if c.Files[i].ApiKey == "" {
+			c.Files[i].ApiKey = c.DefaultApiKey
 		}
 	}
 
-	return
+	return nil
 }
 
-func validateConfigFiles(config *Config) error {
-	for _, f := range config.Files {
-		if f.ApiKey == "" {
-			errText := fmt.Sprintf("File %s has no API key", f.Path)
+func (c *Config) Validate() error {
+	if len(c.Files) > 0 {
+		for _, f := range c.Files {
+			if f.ApiKey == "" {
+				errText := fmt.Sprintf("File %s has no API key", f.Path)
+				return errors.New(errText)
+			}
+		}
+	} else {
+		if c.DefaultApiKey == "" {
+			errText := "No API key. Please use --api-key, TIMBER_API_KEY, or set a default in a config file"
 			return errors.New(errText)
 		}
 	}
+
 	return nil
 }
 
-func validateConfigStdin(config *Config) error {
-	if config.DefaultApiKey == "" {
-		errText := "No API key. Please use --api-key, TIMBER_API_KEY, or set a default in a config file"
-		return errors.New(errText)
+func NewConfig() *Config {
+	return &Config{
+		BatchPeriodSeconds: 10,
+		Endpoint:           "https://logs.timber.io/frames",
 	}
-
-	return nil
 }

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
-	"log"
 	"os"
 	"path"
 
@@ -23,7 +22,7 @@ type FileTailer struct {
 	statefile string
 }
 
-func NewFileTailer(filename string, poll bool, quit chan bool, logger *log.Logger) *FileTailer {
+func NewFileTailer(filename string, poll bool, quit chan bool) *FileTailer {
 	ch := make(chan string)
 	statefile := statefilePath(filename)
 
@@ -33,12 +32,12 @@ func NewFileTailer(filename string, poll bool, quit chan bool, logger *log.Logge
 	state, err := loadState(statefile)
 	if err != nil {
 		// TODO: not an error if state file didn't exist
-		log.Printf("error determining start point: %s", err)
+		logger.Errorf("error determining start point: %s", err)
 		seekInfo = end
 	} else {
 		checksum, err := calculateChecksum(filename)
 		if err != nil {
-			log.Printf("error checksumming: %s", err)
+			logger.Errorf("error checksumming: %s", err)
 			seekInfo = end
 		} else {
 			if checksum == state.Checksum {
@@ -59,7 +58,7 @@ func NewFileTailer(filename string, poll bool, quit chan bool, logger *log.Logge
 		Logger:   logger,
 	})
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 
 	go func() {
@@ -68,20 +67,20 @@ func NewFileTailer(filename string, poll bool, quit chan bool, logger *log.Logge
 			case line, ok := <-inner.Lines:
 				if ok {
 					if err := line.Err; err != nil {
-						log.Println("error reading from %s: %s", filename, err)
+						logger.Errorf("error reading from %s: %s", filename, err)
 					} else {
 						ch <- line.Text
 					}
 				} else {
 					close(ch)
-					log.Printf("stopped tailing %s at offset %d", filename, inner.LastOffset)
+					logger.Infof("stopped tailing %s at offset %d", filename, inner.LastOffset)
 					checksum, err := calculateChecksum(filename)
 					if err == nil {
 						if err := persistState(statefile, checksum, inner.LastOffset); err != nil {
-							log.Printf("error persisting tail state: %s", err)
+							logger.Errorf("error persisting tail state: %s", err)
 						}
 					} else {
-						log.Printf("error calculating checksum: %s", err)
+						logger.Errorf("error calculating checksum: %s", err)
 					}
 					return
 				}
@@ -173,7 +172,7 @@ func calculateChecksum(file string) (uint32, error) {
 
 	// TODO: handle this more robustly
 	if bytesRead < 256 {
-		log.Printf("read %d bytes for checksum instead of 256", bytesRead)
+		logger.Warnf("read %d bytes for checksum instead of 256", bytesRead)
 	}
 
 	return crc32.ChecksumIEEE(b), nil
@@ -197,7 +196,7 @@ func NewReaderTailer(r io.Reader, quit chan bool) *ReaderTailer {
 			innerCh <- scanner.Text()
 		}
 		if err := scanner.Err(); err != nil {
-			log.Println("error reading stdin: ", err)
+			logger.Errorf("error reading stdin: ", err)
 		}
 		close(innerCh)
 	}()

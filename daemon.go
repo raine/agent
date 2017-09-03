@@ -38,5 +38,7 @@ import (
 // possible on this platform.
 func Daemonize() error {
 	errText := "Daemonization is not possible on this platform"
-	return errors.New(errText)
+	err := errors.New(errText)
+	logger.Errorf("Failed to daemonize: %s", err)
+	return err
 }
