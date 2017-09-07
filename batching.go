@@ -40,8 +40,9 @@ func Batch(lines chan string, bufChan chan *bytes.Buffer, batchPeriodSeconds int
 }
 
 func freshBuffer() *bytes.Buffer {
-	// preallocate 2MB
-	buf := bytes.NewBuffer(make([]byte, 2e6))
+	// Preallocate 990kb. The Timber API will not accept payloads larger than 1mb.
+	// This leaves 10kb for headers.
+	buf := bytes.NewBuffer(make([]byte, 990000))
 	buf.Reset()
 	return buf
 }

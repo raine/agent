@@ -27,7 +27,7 @@ func TestBufferOverflow(t *testing.T) {
 	go Batch(lines, bufChan, 10)
 	filler := "test log line"
 	fillerLen := len(filler) + 1
-	for written := 0; written+fillerLen < 2e6; written += fillerLen {
+	for written := 0; written+fillerLen < 990000; written += fillerLen {
 		lines <- filler
 	}
 	lines <- "overflowed"

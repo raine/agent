@@ -12,7 +12,7 @@ func TestNewConfigSetsDefaults(t *testing.T) {
 		t.Error("endpoint was not defaulted")
 	}
 
-	if config.BatchPeriodSeconds != 10 {
+	if config.BatchPeriodSeconds != 3 {
 		t.Error("batch period was not defaulted")
 	}
 }

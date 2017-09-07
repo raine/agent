@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+
+  - The log data buffer size was reduced from 2mb to 990kb to adhere to Timber API limits.
+  - The log data buffer flush interval was reduced from 10 seconds to 3 seconds to provide for more frequent delivery of log data.
 
 ### [0.5.3] - 2017-09-10
 ### Changed

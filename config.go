@@ -85,7 +85,7 @@ func (c *Config) Validate() error {
 
 func NewConfig() *Config {
 	return &Config{
-		BatchPeriodSeconds: 10,
+		BatchPeriodSeconds: 3,
 		Endpoint:           "https://logs.timber.io/frames",
 	}
 }
