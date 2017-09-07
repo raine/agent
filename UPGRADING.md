@@ -1,5 +1,9 @@
 # Upgrading Instruction
 
+## Upgrade to 0.5
+
+No breaking changes were introduced in 0.5
+
 ## Upgrade to 0.4
 
 The 0.4 release introduces the use of sub-commands in the agent. You must now
