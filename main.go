@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 
 	"gopkg.in/urfave/cli.v1"
 )
@@ -214,11 +215,19 @@ func runCaptureFiles(ctx *cli.Context) error {
 	fileConfigsChan := make(chan *FileConfig)
 	for _, fileConfig := range config.Files {
 		go func() {
-			err := Glob(fileConfigsChan, &fileConfig)
-			if err != nil {
-				logger.Error(err)
+			// If we detect a * character, attempt to glob
+			if strings.Contains(fileConfig.Path, "*") {
+				logger.Info("Globbing detected for %s", fileConfig.Path)
+
+				err := Glob(fileConfigsChan, &fileConfig)
+				if err != nil {
+					logger.Error(err)
+				} else {
+					logger.Infof("Globbing goroutine quit for %s", fileConfig.Path)
+				}
 			} else {
-				logger.Infof("Globbing goroutine quit for %s", fileConfig.Path)
+				logger.Info("Globbing not detected for %s", fileConfig.Path)
+				fileConfigsChan <- &fileConfig
 			}
 		}()
 	}

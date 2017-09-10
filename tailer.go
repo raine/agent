@@ -58,11 +58,12 @@ func NewFileTailer(filename string, poll bool, quit chan bool) *FileTailer {
 	}
 
 	inner, err := tail.TailFile(filename, tail.Config{
-		Follow:   true,
-		ReOpen:   true,
-		Poll:     poll,
-		Location: seekInfo,
-		Logger:   logger,
+		Follow:    true,
+		ReOpen:    true,
+		Poll:      poll,
+		Location:  seekInfo,
+		Logger:    logger,
+		MustExist: true,
 	})
 	if err != nil {
 		logger.Fatal(err)
