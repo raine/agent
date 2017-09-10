@@ -6,9 +6,15 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+
+  - All globbing special characters are now supported: *?[]
+
+### Fixed
+  - Resolves an issue where only the last file specified was being tailed.
 
 ### [0.5.2] - 2017-09-09
-
+### Changed
   - Improved logging throughout the agent with improved activity reporting.
   - Only file paths with a * character will enable globbing. This makes file
     tailing stricter, treating paths without * as direct file paths.

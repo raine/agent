@@ -36,22 +36,21 @@ func NewFileTailer(filename string, poll bool, quit chan bool) *FileTailer {
 	// Attempt to resume tailing
 	state, err := loadState(statefile)
 	if err != nil {
-		// TODO: not an error if state file didn't exist
-		logger.Errorf("Error determining start point: %s", err)
+		logger.Warnf("State file %s could not load, agent will recognize new data only: %s", statefile, err)
 		seekInfo = end
 	} else {
 		checksum, err := calculateChecksum(filename)
 		if err != nil {
-			logger.Errorf("Error checksumming: %s", err)
+			logger.Errorf("State file %s checksum failed: %s", statefile, err)
 			seekInfo = end
 		} else {
 			if checksum == state.Checksum {
 				// state file is applicable
-				logger.Infof("State file for %s is accurate, resuming (offset: %s, seekstart: %s)", filename, state.Offset, io.SeekStart)
 				seekInfo = &tail.SeekInfo{state.Offset, io.SeekStart}
+				logger.Infof("State file %s checksum succeeded, resuming - offset: %d, seekstart: %d", statefile, state.Offset, io.SeekStart)
 			} else {
 				// file has been rotated
-				logger.Infof("State file for %s is not accurate, file has been rotated", filename)
+				logger.Infof("State file %s is not accurate, file has been rotated. Reading from beginning of file.", statefile)
 				seekInfo = start
 			}
 		}

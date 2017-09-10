@@ -25,9 +25,15 @@ type Config struct {
 }
 
 func (c *Config) Log() {
-	logger.Infof("Log Collection Endpoint: %s", c.Endpoint)
+	logger.Infof("Log collection endpoint: %s", c.Endpoint)
 	logger.Infof("Using filesystem polling: %s", c.Poll)
 	logger.Infof("Maximum time between sends: %d seconds", c.BatchPeriodSeconds)
+	logger.Infof("File count: %d", len(c.Files))
+
+	for i, file := range c.Files {
+		apiKeySample := file.ApiKey[len(file.ApiKey)-4:]
+		logger.Infof("File %d: %s (api key: ...%s)", i+1, file.Path, apiKeySample)
+	}
 }
 
 func (c *Config) UpdateFromFile(filePath string) error {

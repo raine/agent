@@ -14,12 +14,15 @@ func TestGlobbingDiscoversNewFiles(test *testing.T) {
 	os.RemoveAll(testFilesDirPath)
 	os.MkdirAll(testFilesDirPath, os.ModePerm)
 
-	tick := make(chan time.Time)
-	fileConfigsChan := make(chan *FileConfig)
 	globFilePath := fmt.Sprintf("%s/*.log", testFilesDirPath)
-	fileConfig := &FileConfig{Path: globFilePath}
+	apiKey := "apikey"
+	fileConfigsChan := make(chan *FileConfig)
+	globState := newGlobState(globFilePath, apiKey, fileConfigsChan)
+	tick := make(chan time.Time)
+
+
 	go func() {
-		err := GlobWithTick(tick, fileConfigsChan, fileConfig)
+		err := GlobWithTick(globState, tick)
 		if err != nil {
 			test.Fatal(err)
 		}

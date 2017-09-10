@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"strings"
 
 	"gopkg.in/urfave/cli.v1"
 )
@@ -118,6 +117,8 @@ func runCaptureStdin(ctx *cli.Context) error {
 		config.DefaultApiKey = apiKey
 	}
 
+	config.Log()
+
 	// Validate the configuration
 	err = config.Validate()
 	if err != nil {
@@ -126,8 +127,6 @@ func runCaptureStdin(ctx *cli.Context) error {
 		os.Exit(65)
 	}
 
-	config.Log()
-
 	// Once the configuration has been fetched, we build the base of the metadata that
 	// will accompany every log frame sent to the collection endpoint. The metadata is
 	// of the type *LogEvent.
@@ -135,14 +134,12 @@ func runCaptureStdin(ctx *cli.Context) error {
 
 	// Start forwarding STDIN
 	quit := handleSignals()
-	go func() {
-		err := ForwardStdin(config.Endpoint, config.DefaultApiKey, config.BatchPeriodSeconds, metadata, quit)
-		if err != nil {
-			logger.Error(err)
-		} else {
-			logger.Info("STDIN forwarding goroutine quit")
-		}
-	}()
+	err = ForwardStdin(config.Endpoint, config.DefaultApiKey, config.BatchPeriodSeconds, metadata, quit)
+	if err != nil {
+		logger.Error(err)
+	} else {
+		logger.Info("STDIN forwarding goroutine quit")
+	}
 
 	return nil
 }
@@ -195,6 +192,8 @@ func runCaptureFiles(ctx *cli.Context) error {
 		os.Exit(65)
 	}
 
+	config.Log()
+
 	// Validate the configuration
 	err = config.Validate()
 	if err != nil {
@@ -202,8 +201,6 @@ func runCaptureFiles(ctx *cli.Context) error {
 		// Exit with 65, EX_DATAERR, to indicate input data was incorrect
 		os.Exit(65)
 	}
-
-	config.Log()
 
 	// Once the configuration has been fetched, we build the base of the metadata that
 	// will accompany every log frame sent to the collection endpoint. The metadata is
@@ -214,22 +211,14 @@ func runCaptureFiles(ctx *cli.Context) error {
 	// we set a file path channel to receive these paths over time as they are discovered.
 	fileConfigsChan := make(chan *FileConfig)
 	for _, fileConfig := range config.Files {
-		go func() {
-			// If we detect a * character, attempt to glob
-			if strings.Contains(fileConfig.Path, "*") {
-				logger.Info("Globbing detected for %s", fileConfig.Path)
-
-				err := Glob(fileConfigsChan, &fileConfig)
-				if err != nil {
-					logger.Error(err)
-				} else {
-					logger.Infof("Globbing goroutine quit for %s", fileConfig.Path)
-				}
+		go func(fileConfig FileConfig) {
+			err := GlobContinually(fileConfig.Path, fileConfig.ApiKey, fileConfigsChan)
+			if err != nil {
+				logger.Error(err)
 			} else {
-				logger.Info("Globbing not detected for %s", fileConfig.Path)
-				fileConfigsChan <- &fileConfig
+				logger.Infof("Globbing goroutine quit for %s", fileConfig.Path)
 			}
-		}()
+		}(fileConfig)
 	}
 
 	// Listen for new files, tail them, and forward them
@@ -237,14 +226,14 @@ func runCaptureFiles(ctx *cli.Context) error {
 
 	for fileConfig := range fileConfigsChan {
 		logger.Infof("Received file %s, attempting to foward", fileConfig.Path)
-		go func() {
+		go func(fileConfig *FileConfig) {
 			err := ForwardFile(fileConfig.Path, config.Endpoint, fileConfig.ApiKey, config.Poll, config.BatchPeriodSeconds, metadata, quit)
 			if err != nil {
 				logger.Error(err)
 			} else {
 				logger.Infof("Forwarding goroutine quit for %s", fileConfig.Path)
 			}
-		}()
+		}(fileConfig)
 	}
 
 	return nil
