@@ -15,12 +15,19 @@ func Glob(fileConfigChan chan *FileConfig, fileConfig *FileConfig) error {
 func GlobWithTick(tick <-chan time.Time, fileConfigChan chan *FileConfig, fileConfig *FileConfig) error {
 	currentPaths := map[string]bool{}
 
+	logger.Info("Discovering files for %s", fileConfig.Path)
+
 	for range tick {
 		paths, err := filepath.Glob(fileConfig.Path)
 		if err != nil {
 			logger.Errorf("Error while globbling file path %s: %s", fileConfig.Path, err)
 			return err
 		}
+
+		if len(currentPaths) == 0 && len(paths) == 0 {
+			logger.Warnf("File path %s did not discover _any_ files, the agent will check again momentarily", fileConfig.Path)
+		}
+
 		for _, path := range paths {
 			_, ok := currentPaths[path]
 			if !ok {

@@ -48,6 +48,8 @@ func Forward(bufChan chan *bytes.Buffer, httpClient *retryablehttp.Client, endpo
 }
 
 func ForwardStdin(endpoint string, apiKey string, batchPeriodSeconds int64, metadata *LogEvent, quit chan bool) error {
+	logger.Info("Starting forward for STDIN")
+
 	encodedMetadata, err := metadata.EncodeJSON()
 	if err != nil {
 		// If there was an error encoding to JSON, we do not add it to the sources
@@ -66,6 +68,8 @@ func ForwardStdin(endpoint string, apiKey string, batchPeriodSeconds int64, meta
 }
 
 func ForwardFile(filePath string, endpoint string, apiKey string, poll bool, batchPeriodSeconds int64, metadata *LogEvent, quit chan bool) error {
+	logger.Infof("Starting forward for file %s", filePath)
+
 	// Takes the base of the file's path so that "/var/log/apache2/access.log"
 	// becomes "access.log"
 	fileName := path.Base(filePath)
