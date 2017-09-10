@@ -6,12 +6,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.5.4] - 2017-09-10
 ### Changed
 
   - The log data buffer size was reduced from 2mb to 990kb to adhere to Timber API limits.
   - The log data buffer flush interval was reduced from 10 seconds to 3 seconds to provide for more frequent delivery of log data.
 
-### [0.5.3] - 2017-09-10
+## [0.5.3] - 2017-09-10
 ### Changed
 
   - All globbing special characters are now supported: *?[]
@@ -20,7 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
   - Resolves an issue where only the last file specified was being tailed.
 
-### [0.5.2] - 2017-09-09
+## [0.5.2] - 2017-09-09
 ### Changed
 
   - Improved logging throughout the agent with improved activity reporting.
@@ -150,7 +152,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
     stop
   - Ability to upload logs by streaming them over STDIN
 
-[Unreleased]: https://github.com/timberio/agent/compare/v0.5.3...HEAD
+[Unreleased]: https://github.com/timberio/agent/compare/v0.5.4...HEAD
+[0.5.4]: https://github.com/timberio/agent/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/timberio/agent/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/timberio/agent/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/timberio/agent/compare/v0.5.0...v0.5.1
