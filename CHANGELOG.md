@@ -6,7 +6,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Changed
+
+### [0.5.2] - 2017-09-09
 
   - Improved logging throughout the agent with improved activity reporting.
   - Only file paths with a * character will enable globbing. This makes file
@@ -135,7 +136,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
     stop
   - Ability to upload logs by streaming them over STDIN
 
-[Unreleased]: https://github.com/timberio/agent/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/timberio/agent/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/timberio/agent/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/timberio/agent/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/timberio/agent/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/timberio/agent/compare/v0.4.0...v0.4.1
