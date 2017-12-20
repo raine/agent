@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+  - Fixed a disastrous memory leak that was occuring during the request cycle
+
 ## [0.5.4] - 2017-09-10
 ### Changed
 

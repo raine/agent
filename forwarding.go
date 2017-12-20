@@ -37,7 +37,7 @@ func Forward(bufChan chan *bytes.Buffer, httpClient *retryablehttp.Client, endpo
 			// retries have already happened at this point, so give up
 			logger.Fatal(err)
 		}
-		defer resp.Body.Close()
+		resp.Body.Close()
 
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 			logger.Infof("flushed buffer (status code %d)", resp.StatusCode)
