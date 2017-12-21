@@ -12,6 +12,7 @@ import (
 )
 
 var defaultHTTPClient = retryablehttp.NewClient()
+var UserAgent = fmt.Sprintf("timber-agent/%s", version)
 
 func init() {
 	defaultHTTPClient.HTTPClient.Timeout = 10 * time.Second
@@ -30,6 +31,7 @@ func Forward(bufChan chan *bytes.Buffer, httpClient *retryablehttp.Client, endpo
 
 		req.Header.Add("Content-Type", "text/plain")
 		req.Header.Add("Authorization", fmt.Sprintf("Basic %s", token))
+		req.Header.Add("User-Agent", UserAgent)
 		req.Header.Add("Timber-Metadata-Override", metadata)
 
 		resp, err := httpClient.Do(req)

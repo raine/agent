@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+  - The "User-Agent" header now reports "timber-agent" along with the version
+    number
+
 ### Fixed
 
   - Fixed a disastrous memory leak that was occuring during the request cycle
