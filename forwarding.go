@@ -22,6 +22,7 @@ func Forward(bufChan chan *bytes.Buffer, httpClient *retryablehttp.Client, endpo
 	// Set the logger when the function is called to ensure we pickup any logger changes.
 	httpClient.Logger = standardLoggerAlternative
 	token := base64.StdEncoding.EncodeToString([]byte(apiKey))
+	authorization := fmt.Sprintf("Basic %s", token)
 
 	for buf := range bufChan {
 		req, err := retryablehttp.NewRequest("POST", endpoint, bytes.NewReader(buf.Bytes()))
@@ -30,7 +31,7 @@ func Forward(bufChan chan *bytes.Buffer, httpClient *retryablehttp.Client, endpo
 		}
 
 		req.Header.Add("Content-Type", "text/plain")
-		req.Header.Add("Authorization", fmt.Sprintf("Basic %s", token))
+		req.Header.Add("Authorization", authorization)
 		req.Header.Add("User-Agent", UserAgent)
 		req.Header.Add("Timber-Metadata-Override", metadata)
 

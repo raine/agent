@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
   - The "User-Agent" header now reports "timber-agent" along with the version
     number
+  - Moved construction of the authorization header string out of a tight loop;
+    this improves memory allocation by such an infinitesimal amount that it
+    may be of no consequence
 
 ### Fixed
 
