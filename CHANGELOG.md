@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
   - Fixed a disastrous memory leak that was occuring during the request cycle
+  - Fixed metadata JSON encoding containing empty JSON objects which the service
+    treated as invalid
 
 ## [0.5.4] - 2017-09-10
 ### Changed

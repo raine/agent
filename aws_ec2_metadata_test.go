@@ -110,10 +110,8 @@ func TestAddEC2MetadataNoService(test *testing.T) {
 
 	AddEC2Metadata(ec2Client, logEvent)
 
-	amiID := logEvent.Context.Platform.AWSEC2.AmiID
-
-	if amiID != "" {
-		test.Fatalf("Expected AmiID to be an empty string, instead got %s", amiID)
+	if logEvent.Context != nil {
+		test.Fatal("Expected logEvent.Context to be nil but it was not")
 	}
 }
 

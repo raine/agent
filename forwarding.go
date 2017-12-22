@@ -81,6 +81,7 @@ func ForwardFile(filePath string, endpoint string, apiKey string, poll bool, bat
 	// local copy of the metadata
 	localMetadata := *metadata // localMetadata is of type LogEvent
 	md := &localMetadata       // md is of type *LogEvent
+	md.ensureSourceContext()
 	md.Context.Source.FileName = fileName
 	encodedMetadata, err := md.EncodeJSON()
 	if err != nil {

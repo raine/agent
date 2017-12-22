@@ -61,11 +61,15 @@ func AddEC2Metadata(client *EC2Client, logEvent *LogEvent) {
 		logger.Infof("Discovered EC2 Public Hostname from AWS EC2 metadata: %s", publicHostname)
 	}
 
-	logEvent.Context.Platform.AWSEC2.AmiID = amiID
-	logEvent.Context.Platform.AWSEC2.Hostname = hostname
-	logEvent.Context.Platform.AWSEC2.InstanceID = instanceID
-	logEvent.Context.Platform.AWSEC2.InstanceType = instanceType
-	logEvent.Context.Platform.AWSEC2.PublicHostname = publicHostname
+	context := &AWSEC2Context{
+		AmiID: amiID,
+		Hostname: hostname,
+		InstanceID: instanceID,
+		InstanceType: instanceType,
+		PublicHostname: publicHostname,
+	}
+
+	logEvent.AddEC2Context(context)
 
 	return
 }

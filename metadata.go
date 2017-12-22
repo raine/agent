@@ -23,6 +23,7 @@ func BuildBaseMetadata(config *Config) *LogEvent {
 		}
 	}
 
+	logEvent.ensureSystemContext()
 	logEvent.Context.System.Hostname = hostname
 
 	if !config.CollectEC2MetadataDisabled {
