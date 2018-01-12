@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.6.1] - 2018-01-12
+
 ### Added
 
   - Releases will now build executables for Linux running on a 32-bit and 64-bit
