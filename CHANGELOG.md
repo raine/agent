@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+  - Releases will now build executables for Linux running on a 32-bit and 64-bit
+    ARM processor
+
 ## [0.6.0] - 2017-12-29
 
 ### Changed

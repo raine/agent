@@ -40,6 +40,8 @@ build: clean-build
 		-osarch="darwin/amd64" \
 		-osarch="freebsd/amd64" \
 		-osarch="linux/amd64" \
+		-osarch="linux/arm" \
+		-osarch="linux/arm64" \
 		-osarch="netbsd/amd64" \
 		-osarch="openbsd/amd64" \
 		-output "$(build_dir)/$(exec)-$(version)-{{.OS}}-{{.Arch}}/$(exec)/bin/$(exec)"
