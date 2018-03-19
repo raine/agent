@@ -62,10 +62,10 @@ func AddEC2Metadata(client *EC2Client, logEvent *LogEvent) {
 	}
 
 	context := &AWSEC2Context{
-		AmiID: amiID,
-		Hostname: hostname,
-		InstanceID: instanceID,
-		InstanceType: instanceType,
+		AmiID:          amiID,
+		Hostname:       hostname,
+		InstanceID:     instanceID,
+		InstanceType:   instanceType,
 		PublicHostname: publicHostname,
 	}
 

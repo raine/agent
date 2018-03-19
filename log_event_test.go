@@ -12,7 +12,7 @@ import (
 // JSON payload does not carry the "empty" child attributes of event.Context (event.Context.Platform and
 // event.Context.Source).
 func TestLogEventEncodeJSONEmptyChild(test *testing.T) {
-	expected := `{"$schema":"https://raw.githubusercontent.com/timberio/log-event-json-schema/v3.0.8/schema.json","context":{"system":{"hostname":"localhost"}}}`
+	expected := `{"$schema":"https://raw.githubusercontent.com/timberio/log-event-json-schema/v4.1.0/schema.json","context":{"system":{"hostname":"localhost"}}}`
 	event := NewLogEvent()
 	event.ensureSystemContext()
 	event.Context.System.Hostname = "localhost"

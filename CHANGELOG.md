@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+  - A new sub-command has been added, `capture-kube`, for collecting and
+    shipping Kubernetes application logs.
+
 ## [0.7.0] - 2018-05-10
 
 ### Changed

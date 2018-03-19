@@ -20,3 +20,11 @@
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"
+
+[[constraint]]
+  name = "github.com/mitchellh/copystructure"
+  revision = "d23ffcb85de31694d6ccaa23ccb4a03e55c1303f"
+
+[[constraint]]
+  name = "github.com/google/go-cmp"
+  revision = "3af367b6b30c263d47e8895973edcca9a49cf029"

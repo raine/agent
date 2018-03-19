@@ -19,7 +19,7 @@ type FileTailer struct {
 	lines    chan string
 }
 
-func NewFileTailer(filename string, poll bool, quit chan bool) *FileTailer {
+func NewFileTailer(filename string, poll bool, quit chan bool, stop chan bool) *FileTailer {
 	logger.Infof("Creating new file tailer for %s", filename)
 
 	ch := make(chan string)
@@ -90,7 +90,11 @@ func NewFileTailer(filename string, poll bool, quit chan bool) *FileTailer {
 			case <-quit:
 				// looks like we're getting into here multiple times for some files?
 				inner.Stop()
+
+			case <-stop:
+				inner.Stop()
 			}
+
 		}
 	}()
 

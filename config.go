@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -21,7 +23,12 @@ type Config struct {
 	BatchPeriodSeconds         int64
 	Poll                       bool
 	Hostname                   string
-	CollectEC2MetadataDisabled bool `toml:"disable_ec2_metadata"`
+	CollectEC2MetadataDisabled bool              `toml:"disable_ec2_metadata"`
+	KubernetesConfig           *KubernetesConfig `toml:"kubernetes"`
+}
+
+type KubernetesConfig struct {
+	Exclude map[string]string
 }
 
 func (c *Config) Log() {
@@ -88,4 +95,129 @@ func NewConfig() *Config {
 		BatchPeriodSeconds: 3,
 		Endpoint:           "https://logs.timber.io/frames",
 	}
+}
+
+//NewKubernetesConfig Return a new KubernetesConfig initialized with opinionated defaults.
+// These include filtering kube-system namespace and timber-agent pods, our expected Pod name.
+func NewKubernetesConfig() *KubernetesConfig {
+	return &KubernetesConfig{
+		Exclude: map[string]string{
+			"namespaces": "kube-system",
+			"pods":       "timber-agent",
+		},
+	}
+}
+
+var supportedFilterKinds = []string{"namespaces", "deployments", "pods"}
+
+//Validate Serves as a source of diagnostic information for the end user
+func (kc *KubernetesConfig) Validate() {
+	// Validate Exclude configuration
+	for kind := range kc.Exclude {
+		var match bool
+
+		for _, filterKind := range supportedFilterKinds {
+			if kind == filterKind {
+				match = true
+				break
+			}
+		}
+
+		if !match {
+			logger.Warnf("Exclusion kind %s is not supported and will not be applied as a filter.", kind)
+		}
+	}
+}
+
+func (kc *KubernetesConfig) ApplyFilter(context *KubernetesContext) (string, bool) {
+	if len(kc.Exclude) == 0 {
+		return "", false
+	}
+
+	// Namespaces
+	if filterString, ok := kc.Exclude["namespaces"]; ok {
+		match, ok := compareNamespace(filterString, context.Namespace)
+		if ok {
+			match = fmt.Sprintf("%s:%s", "namespaces", match)
+			return match, ok
+		}
+	}
+
+	// Deployments
+	if filterString, ok := kc.Exclude["deployments"]; ok {
+		match, ok := compareRootOwner("deployment", filterString, context.RootOwner)
+		if ok {
+			match = fmt.Sprintf("%s:%s", "deployments", match)
+			return match, ok
+		}
+	}
+
+	// Pods
+	if filterString, ok := kc.Exclude["pods"]; ok {
+		match, ok := comparePod(filterString, context.PodName)
+		if ok {
+			match = fmt.Sprintf("%s:%s", "pods", match)
+			return match, ok
+		}
+	}
+
+	return "", false
+}
+
+func compareNamespace(filterString, value string) (string, bool) {
+	patterns := strings.Split(filterString, ",")
+
+	for _, pattern := range patterns {
+		r, err := regexp.Compile(pattern)
+		if err != nil {
+			logger.Errorf("Unable to parse invalid regular expression: %s", pattern)
+			continue // try again with next pattern
+		}
+
+		if r.MatchString(value) {
+			return pattern, true
+		}
+	}
+
+	return "", false
+}
+func comparePod(filterString, value string) (string, bool) {
+	patterns := strings.Split(filterString, ",")
+
+	for _, pattern := range patterns {
+		r, err := regexp.Compile(pattern)
+		if err != nil {
+			logger.Errorf("Unable to parse invalid regular expression: %s", pattern)
+			continue // try again with next pattern
+		}
+
+		if r.MatchString(value) {
+			return pattern, true
+		}
+	}
+
+	return "", false
+}
+
+// rootOwner has fields kind and name
+func compareRootOwner(kind, filterString string, rootOwner map[string]string) (string, bool) {
+	if strings.ToLower(rootOwner["kind"]) != kind {
+		return "", false
+	}
+
+	patterns := strings.Split(filterString, ",")
+
+	for _, pattern := range patterns {
+		r, err := regexp.Compile(pattern)
+		if err != nil {
+			logger.Errorf("Unable to parse invalid regular expression: %s", pattern)
+			continue // try again with next pattern
+		}
+
+		if r.MatchString(rootOwner["name"]) {
+			return pattern, true
+		}
+	}
+
+	return "", false
 }
