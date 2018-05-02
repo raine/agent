@@ -13,6 +13,11 @@ func Batch(lines chan string, bufChan chan *bytes.Buffer, batchPeriodSeconds int
 		select {
 		case line, ok := <-lines:
 			if ok {
+				if len(line)+1 > buf.Cap() {
+					logger.Warn("Ignoring log line greater than the max payload size (1 MB)")
+					continue
+				}
+
 				if buf.Len()+len(line)+1 > buf.Cap() {
 					bufChan <- buf
 					buf = freshBuffer()

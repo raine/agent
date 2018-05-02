@@ -40,3 +40,27 @@ func TestBufferOverflow(t *testing.T) {
 		t.Fatalf("expected \"%+v\", got \"%+v\"", expected, actual)
 	}
 }
+
+// Batch()
+// Log lines larger than the max payload size (1 MB) should be dropped
+func TestBatchDropLogLine(t *testing.T) {
+	lines := make(chan string)
+	bufChan := make(chan *bytes.Buffer)
+
+	filler := "test log line"
+	buf := bytes.NewBuffer(make([]byte, 990000))
+	for buf.Len() < 990000 {
+		buf.WriteString(filler)
+	}
+	logline := buf.String()
+
+	go Batch(lines, bufChan, 10)
+	lines <- logline
+	close(lines)
+
+	// Nothing should be sent to bufChan since we are dropping message
+	actual := <-bufChan
+	if actual != nil {
+		t.Fatalf("expected \"%+v\" to be nil", actual)
+	}
+}
