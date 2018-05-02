@@ -47,6 +47,13 @@ func TestFileTailerPersistsState(test *testing.T) {
 	}
 	defer os.Remove(file.Name())
 
+	globalStateFile, err := ioutil.TempFile("", "timber-agent-test-statefile.json")
+	if err != nil {
+		panic(err)
+	}
+	defer os.Remove(file.Name())
+	globalState.File = globalStateFile
+
 	// Writes 256 bytes to the file as initial data; this ensures that
 	// the file hash can be computed properly
 	for i := 0; i < 256; i++ {
@@ -99,7 +106,7 @@ func TestFileTailerPersistsState(test *testing.T) {
 	thirdTailer.Wait()
 
 	time.Sleep(5 * time.Millisecond)
-	thirdTailer.RemoveStatefile()
+	os.Remove(thirdTailer.filename)
 }
 
 func TestFileTailerIgnoresStateAfterRotation(test *testing.T) {
@@ -108,6 +115,13 @@ func TestFileTailerIgnoresStateAfterRotation(test *testing.T) {
 		panic(err)
 	}
 	defer os.Remove(file.Name())
+
+	globalStateFile, err := ioutil.TempFile("", "timber-agent-test-statefile.json")
+	if err != nil {
+		panic(err)
+	}
+	defer os.Remove(file.Name())
+	globalState.File = globalStateFile
 
 	// Writes 256 bytes to the file as initial data; this ensures that
 	// the file hash can be computed properly
@@ -151,7 +165,7 @@ func TestFileTailerIgnoresStateAfterRotation(test *testing.T) {
 	secondTailer.Wait()
 
 	time.Sleep(5 * time.Millisecond)
-	secondTailer.RemoveStatefile()
+	os.Remove(secondTailer.filename)
 }
 
 func generateLogLines(prefix string, n int) chan string {

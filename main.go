@@ -42,6 +42,11 @@ func main() {
 		Usage: "will store the pid in `FILE` when set",
 	}
 
+	statefileFlag := cli.StringFlag{
+		Name:  "statefile",
+		Usage: "File path for storing global state, defaults to sane path based on OS",
+	}
+
 	app := cli.NewApp()
 	app.Name = "timber-agent"
 	app.Usage = "forwards logs to timber.io"
@@ -68,6 +73,7 @@ func main() {
 				daemonizeFlag,
 				logfileFlag,
 				pidfileFlag,
+				statefileFlag,
 			},
 		},
 	}
@@ -198,6 +204,21 @@ func runCaptureFiles(ctx *cli.Context) error {
 	err = config.Validate()
 	if err != nil {
 		logger.Error(err)
+		// Exit with 65, EX_DATAERR, to indicate input data was incorrect
+		os.Exit(65)
+	}
+
+	// Initialize/Load global state
+	// If we fail to initialize our global state, we exit the program. It is paramount that we are able to read
+	// and record global state in order for our agent to work effectively and avoid duplicating data.
+	stateFilePath := ctx.String("statefile")
+	if stateFilePath == "" {
+		stateFilePath = DefaultGlobalStateFilename()
+	}
+
+	err = globalState.Load(stateFilePath)
+	if err != nil {
+		logger.Errorf("Failed to initalize global state: %s", err)
 		// Exit with 65, EX_DATAERR, to indicate input data was incorrect
 		os.Exit(65)
 	}

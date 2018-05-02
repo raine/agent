@@ -14,6 +14,17 @@
   revision = "3d9f6e0b234fe7d17448b345b2e14ac05814a758"
 
 [[projects]]
+  name = "github.com/google/go-cmp"
+  packages = [
+    "cmp",
+    "cmp/internal/diff",
+    "cmp/internal/function",
+    "cmp/internal/value"
+  ]
+  revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
+  version = "v0.2.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/hashicorp/go-cleanhttp"
   packages = ["."]
@@ -33,7 +44,13 @@
 
 [[projects]]
   name = "github.com/timberio/tail"
-  packages = [".","ratelimiter","util","watch","winfile"]
+  packages = [
+    ".",
+    "ratelimiter",
+    "util",
+    "watch",
+    "winfile"
+  ]
   revision = "cdfe527fb098c61e77f575e256c507868e5b31b2"
 
 [[projects]]
@@ -45,7 +62,10 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix","windows"]
+  packages = [
+    "unix",
+    "windows"
+  ]
   revision = "7ddbeae9ae08c6a06a59597f0c9edbc5ff2444ce"
 
 [[projects]]
@@ -69,6 +89,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e9247baaf04ddd79e81ea155cb000ad1606147ec09c4860e5c737f2e9e510b2f"
+  inputs-digest = "3872c03edbdce871b00907506914730458db672bb623caee8e9a827e268e9518"
   solver-name = "gps-cdcl"
   solver-version = 1

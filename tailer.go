@@ -2,12 +2,9 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
-	"fmt"
 	"hash/crc32"
 	"io"
 	"os"
-	"path"
 
 	"github.com/timberio/tail"
 )
@@ -17,40 +14,38 @@ type Tailer interface {
 }
 
 type FileTailer struct {
-	filename  string
-	inner     *tail.Tail
-	lines     chan string
-	statefile string
+	filename string
+	inner    *tail.Tail
+	lines    chan string
 }
 
 func NewFileTailer(filename string, poll bool, quit chan bool) *FileTailer {
 	logger.Infof("Creating new file tailer for %s", filename)
 
 	ch := make(chan string)
-	statefile := statefilePath(filename)
 
 	var seekInfo *tail.SeekInfo
 	start := &tail.SeekInfo{0, io.SeekStart}
 	end := &tail.SeekInfo{0, io.SeekEnd}
 
 	// Attempt to resume tailing
-	state, err := loadState(statefile)
-	if err != nil {
-		logger.Warnf("State file %s could not load, agent will recognize new data only: %s", statefile, err)
+	state := LoadState(filename)
+	if state == nil {
+		logger.Warnf("Could not load state for file %s, agent will recognize new data only", filename)
 		seekInfo = end
 	} else {
 		checksum, err := calculateChecksum(filename)
 		if err != nil {
-			logger.Errorf("State file %s checksum failed: %s", statefile, err)
+			logger.Errorf("Failed to generate checksum for file %s, agent will recognize new data only: %s", filename, err)
 			seekInfo = end
 		} else {
 			if checksum == state.Checksum {
 				// state file is applicable
 				seekInfo = &tail.SeekInfo{state.Offset, io.SeekStart}
-				logger.Infof("State file %s checksum succeeded, resuming - offset: %d, seekstart: %d", statefile, state.Offset, io.SeekStart)
+				logger.Infof("Checksum for %s matched recorded state, resuming - offset: %d, seekstart: %d", filename, state.Offset, io.SeekStart)
 			} else {
 				// file has been rotated
-				logger.Infof("State file %s is not accurate, file has been rotated. Reading from beginning of file.", statefile)
+				logger.Infof("Checksum for %s does not match recorded state. Reading from beginning of file.", filename)
 				seekInfo = start
 			}
 		}
@@ -83,7 +78,7 @@ func NewFileTailer(filename string, poll bool, quit chan bool) *FileTailer {
 					logger.Infof("Stopped tailing %s at offset %d", filename, inner.LastOffset)
 					checksum, err := calculateChecksum(filename)
 					if err == nil {
-						if err := persistState(statefile, checksum, inner.LastOffset); err != nil {
+						if err := PersistState(filename, checksum, inner.LastOffset); err != nil {
 							logger.Errorf("Error persisting tail state: %s", err)
 						}
 					} else {
@@ -99,7 +94,7 @@ func NewFileTailer(filename string, poll bool, quit chan bool) *FileTailer {
 		}
 	}()
 
-	return &FileTailer{inner: inner, lines: ch, filename: filename, statefile: statefile}
+	return &FileTailer{inner: inner, lines: ch, filename: filename}
 }
 
 func (f *FileTailer) Lines() chan string {
@@ -108,62 +103,6 @@ func (f *FileTailer) Lines() chan string {
 
 func (f *FileTailer) Wait() {
 	f.inner.Wait()
-}
-
-func (f *FileTailer) RemoveStatefile() {
-	logger.Infof("Removing state file for %s", f.filename)
-	os.Remove(f.statefile)
-}
-
-type State struct {
-	Checksum uint32
-	Offset   int64
-}
-
-func loadState(statefile string) (*State, error) {
-	f, err := os.Open(statefile)
-	if err != nil {
-		return nil, err
-	}
-
-	b := make([]byte, 2048)
-	bytesRead, err := f.Read(b)
-	if err != nil && err != io.EOF {
-		return nil, err
-	}
-
-	var state State
-	if err := json.Unmarshal(b[:bytesRead], &state); err != nil {
-		return nil, err
-	}
-
-	return &state, nil
-}
-
-func persistState(statefile string, checksum uint32, offset int64) error {
-	f, err := os.Create(statefile)
-	if err != nil {
-		return err
-	}
-
-	b, err := json.Marshal(State{Checksum: checksum, Offset: offset})
-	if err != nil {
-		return err
-	}
-
-	if err := f.Truncate(0); err != nil {
-		return err
-	}
-
-	if _, err := f.WriteAt(b, 0); err != nil {
-		return err
-	}
-
-	if err := f.Sync(); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func calculateChecksum(file string) (uint32, error) {
@@ -184,10 +123,6 @@ func calculateChecksum(file string) (uint32, error) {
 	}
 
 	return crc32.ChecksumIEEE(b), nil
-}
-
-func statefilePath(target string) string {
-	return fmt.Sprintf("%s-state.json", path.Base(target))
 }
 
 type ReaderTailer struct {
