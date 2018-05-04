@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.6.2] - 2018-05-04
+
+### Fixed
+
+  - Fixed docker container failing to boot
+  - Log lines larger than the max payload size (1MB) now are dropped as these would always receive an error code from the API.
+
 ## [0.6.1] - 2018-01-12
 
 ### Added
@@ -175,7 +182,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
     stop
   - Ability to upload logs by streaming them over STDIN
 
-[Unreleased]: https://github.com/timberio/agent/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/timberio/agent/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/timberio/agent/compare/v0.6.1...v0.6.2
+[0.6.1]: https://github.com/timberio/agent/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/timberio/agent/compare/v0.5.4...v0.6.0
 [0.5.4]: https://github.com/timberio/agent/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/timberio/agent/compare/v0.5.2...v0.5.3

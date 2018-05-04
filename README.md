@@ -137,7 +137,7 @@ OPTIONS:
    --daemonize               starts an instance of agent as a daemon (only available on Linux; see documentation)
    --output-log-file FILE    the agent will write its own logs to FILE (will use STDOUT if not provided)
    --pidfile FILE            will store the pid in FILE when set
-
+   --statefile value         File path for storing global state, defaults to sane path based on OS
 ```
 
 
@@ -168,4 +168,3 @@ statically linked into the executable at compile time. This third-party code is
 redistributed without modification and made available to all users  under the
 terms of each project's original license within the `vendor` directory of the
 project.
-
