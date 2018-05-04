@@ -34,7 +34,8 @@ jobs:
             else
               echo "Not running a release tag"
             fi
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 17.05.0-ce
       - run:
           name: Publish Docker Image
           command: |
