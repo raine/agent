@@ -45,6 +45,7 @@ func TestEC2ClientAvailable404(test *testing.T) {
 // and Available() should return `false`
 func TestEC2ClientAvailableFalse(test *testing.T) {
 	ec2Client := GetEC2Client()
+	ec2Client.BaseEndpoint = "http://127.0.0.1"
 
 	available := ec2Client.Available()
 
@@ -106,6 +107,7 @@ func TestEC2ClientGetMetadata404(test *testing.T) {
 // When the service is not available, the LogEvent should not be modified
 func TestAddEC2MetadataNoService(test *testing.T) {
 	ec2Client := GetEC2Client()
+	ec2Client.BaseEndpoint = "http://127.0.0.1"
 	logEvent := &LogEvent{}
 
 	AddEC2Metadata(ec2Client, logEvent)
