@@ -36,7 +36,7 @@ build: clean-build
 	@echo "Creating build directory"
 	mkdir -p $(build_dir)
 	@echo "Building targets"
-	@gox -ldflags "-X main.version=$(version)" \
+	@CGO_ENABLED=0 gox -ldflags "-X main.version=$(version)" \
 		-osarch="darwin/amd64" \
 		-osarch="freebsd/amd64" \
 		-osarch="linux/amd64" \
