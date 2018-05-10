@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.7.0] - 2018-05-10
+
+### Changed
+
+  - CircleCI now uses Docker daemon 17.05.0-ce, the minimum version supporting multi-stage builds
+  - When running `capture-files`, tailed file state is now stored in a single file at a configurable path
+
+### Fixed
+
+  - Fixed tests that would always fail when run on an AWS instance
+  - Disable cgo when building the agent to avoid dynamically linking to C libs
+
 ## [0.6.2] - 2018-05-04
 
 ### Fixed
@@ -182,7 +194,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
     stop
   - Ability to upload logs by streaming them over STDIN
 
-[Unreleased]: https://github.com/timberio/agent/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/timberio/agent/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/timberio/agent/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/timberio/agent/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/timberio/agent/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/timberio/agent/compare/v0.5.4...v0.6.0
