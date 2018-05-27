@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+  - The `timber-metadata-override` header value is now base 64 encoded to account for non-ascii
+    characters.
+
 ## [0.8.0] - 2018-05-22
 
 ### Added
@@ -19,7 +24,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
   - CircleCI now uses Docker daemon 17.05.0-ce, the minimum version supporting multi-stage builds
-  - When running `capture-files`, tailed file state is now stored in a single file at a configurable path
+  - When running `capture-files`, tailed file state is now stored in a single file at a
+    configurable path
 
 ### Fixed
 
@@ -31,7 +37,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
   - Fixed docker container failing to boot
-  - Log lines larger than the max payload size (1MB) now are dropped as these would always receive an error code from the API.
+  - Log lines larger than the max payload size (1MB) now are dropped as these would always receive
+    an error code from the API.
 
 ## [0.6.1] - 2018-01-12
 
@@ -60,7 +67,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
   - The log data buffer size was reduced from 2mb to 990kb to adhere to Timber API limits.
-  - The log data buffer flush interval was reduced from 10 seconds to 3 seconds to provide for more frequent delivery of log data.
+  - The log data buffer flush interval was reduced from 10 seconds to 3 seconds to provide for more
+    frequent delivery of log data.
 
 ## [0.5.3] - 2017-09-10
 ### Changed

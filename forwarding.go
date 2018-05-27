@@ -18,7 +18,7 @@ func init() {
 	defaultHTTPClient.HTTPClient.Timeout = 10 * time.Second
 }
 
-func Forward(bufChan chan *bytes.Buffer, httpClient *retryablehttp.Client, endpoint, apiKey string, metadata string) {
+func Forward(bufChan chan *bytes.Buffer, httpClient *retryablehttp.Client, endpoint, apiKey string, metadata []byte) {
 	// Set the logger when the function is called to ensure we pickup any logger changes.
 	httpClient.Logger = standardLoggerAlternative
 	token := base64.StdEncoding.EncodeToString([]byte(apiKey))
@@ -33,7 +33,11 @@ func Forward(bufChan chan *bytes.Buffer, httpClient *retryablehttp.Client, endpo
 		req.Header.Add("Content-Type", "text/plain")
 		req.Header.Add("Authorization", authorization)
 		req.Header.Add("User-Agent", UserAgent)
-		req.Header.Add("Timber-Metadata-Override", metadata)
+
+		if len(metadata) > 0 {
+			encodedMetadata := base64.StdEncoding.EncodeToString(metadata)
+			req.Header.Add("Timber-Metadata-Override", encodedMetadata)
+		}
 
 		resp, err := httpClient.Do(req)
 		if err != nil {
@@ -61,11 +65,10 @@ func ForwardStdin(endpoint string, apiKey string, batchPeriodSeconds int64, meta
 		return err
 	}
 
-	encodedMetadataString := string(encodedMetadata)
 	bufChan := make(chan *bytes.Buffer)
 	tailer := NewReaderTailer(os.Stdin, quit)
 	go Batch(tailer.Lines(), bufChan, batchPeriodSeconds)
-	Forward(bufChan, defaultHTTPClient, endpoint, apiKey, encodedMetadataString)
+	Forward(bufChan, defaultHTTPClient, endpoint, apiKey, encodedMetadata)
 
 	return nil
 }
@@ -83,6 +86,7 @@ func ForwardFile(filePath string, endpoint string, apiKey string, poll bool, bat
 	md := &localMetadata       // md is of type *LogEvent
 	md.ensureSourceContext()
 	md.Context.Source.FileName = fileName
+
 	encodedMetadata, err := md.EncodeJSON()
 	if err != nil {
 		// If there was an error encoding to JSON, we do not add it to the sources
@@ -91,11 +95,10 @@ func ForwardFile(filePath string, endpoint string, apiKey string, poll bool, bat
 		return err
 	}
 
-	encodedMetadataString := string(encodedMetadata)
 	bufChan := make(chan *bytes.Buffer)
 	tailer := NewFileTailer(filePath, poll, quit, stop)
 	go Batch(tailer.Lines(), bufChan, batchPeriodSeconds)
-	Forward(bufChan, defaultHTTPClient, endpoint, apiKey, encodedMetadataString)
+	Forward(bufChan, defaultHTTPClient, endpoint, apiKey, encodedMetadata)
 
 	return nil
 }
