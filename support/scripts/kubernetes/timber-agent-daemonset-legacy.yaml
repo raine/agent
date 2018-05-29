@@ -30,14 +30,14 @@ spec:
         pod.alpha.kubernetes.io/init-containers: '[{
           "name": "docker-pull-timber-agent",
           "image": "timberio/docker-client:17.03.2-ce",
-          "command": ["pull", "timberio/agent:0.8.0"],
+          "args": ["pull", "timberio/agent:0.8.0"],
           "volumeMounts": [{
             "name": "dockersock",
             "mountPath": "/var/run/docker.sock"
           },
           "name": "docker-pull-kubectl",
           "image": "timberio/docker-client:17.03.2-ce",
-          "command": ["pull", "timberio/kubectl:1.10.0"],
+          "args": ["pull", "timberio/kubectl:1.10.0"],
           "volumeMounts": [{
             "name": "dockersock",
             "mountPath": "/var/run/docker.sock"

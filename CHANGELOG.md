@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - The `timber-metadata-override` header value is now base 64 encoded to account for non-ascii
     characters.
 
+### Fixed
+
+  - Init containers now execute correctly in Kubernetes manifests for versions < 1.6.
+
 ## [0.8.0] - 2018-05-22
 
 ### Added
