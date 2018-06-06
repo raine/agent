@@ -1,5 +1,17 @@
 # Upgrading Instruction
 
+## Upgrade to 0.8
+
+No breaking changes were introduced in 0.8
+
+## Upgrade to 0.7
+
+No breaking changes were introduced in 0.7
+
+## Upgrade to 0.6
+
+No breaking changes were introduced in 0.6
+
 ## Upgrade to 0.5
 
 No breaking changes were introduced in 0.5
