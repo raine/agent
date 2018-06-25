@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+  - Respect the `--endpoint` option when running `capture-files`.
+
 ## [0.8.1] - 2018-05-29
 
 ### Changed

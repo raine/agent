@@ -71,6 +71,7 @@ func main() {
 			Flags: []cli.Flag{
 				configFlag,
 				daemonizeFlag,
+				endpointFlag,
 				logfileFlag,
 				pidfileFlag,
 				statefileFlag,
