@@ -30,7 +30,7 @@ spec:
         pod.alpha.kubernetes.io/init-containers: '[{
           "name": "docker-pull-timber-agent",
           "image": "timberio/docker-client:17.03.2-ce",
-          "args": ["pull", "timberio/agent:0.8.1"],
+          "args": ["pull", "timberio/agent:0.8.2"],
           "volumeMounts": [{
             "name": "dockersock",
             "mountPath": "/var/run/docker.sock"
@@ -46,7 +46,7 @@ spec:
     spec:
       containers:
       - name: timber-agent
-        image: "timberio/agent:0.8.1"
+        image: "timberio/agent:0.8.2"
         args: ["capture-kube", "-c", "/timber/config.toml"]
         imagePullPolicy: IfNotPresent
         env:
