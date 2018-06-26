@@ -27,7 +27,7 @@ func main() {
 	}
 
 	endpointFlag := cli.StringFlag{
-		Name:   "Endpoint",
+		Name:   "endpoint",
 		Usage:  "Configures the log collection endpoint logs are sent to",
 		Hidden: true,
 	}
@@ -84,7 +84,6 @@ func main() {
 			Flags: []cli.Flag{
 				apiKeyFlag,
 				configFlag,
-				endpointFlag,
 				daemonizeFlag,
 				logfileFlag,
 				pidfileFlag,
@@ -203,6 +202,12 @@ func runCaptureFiles(ctx *cli.Context) error {
 
 	// Load the config with defaults.
 	config := NewConfig()
+
+	// Update endpoint to one specified on command line if present
+	endpoint := ctx.String("endpoint")
+	if endpoint != "" {
+		config.Endpoint = endpoint
+	}
 
 	// Update the configuration from a file. This *is* required for file mode.
 	configFilePath := ctx.String("config")

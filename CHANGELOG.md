@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+  - Convert the `--endpoint` option to lowercase to match other cli options.
+  - Actually respect the `--endpoint` option when running `capture-files`.
+
 ## [0.8.2] - 2018-06-25
 
 ### Added
