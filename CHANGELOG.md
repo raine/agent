@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.8.3] - 2018-06-26
+
+### Fixed
+
   - Convert the `--endpoint` option to lowercase to match other cli options.
   - Actually respect the `--endpoint` option when running `capture-files`.
 
@@ -224,7 +228,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
     stop
   - Ability to upload logs by streaming them over STDIN
 
-[Unreleased]: https://github.com/timberio/agent/compare/v0.8.2...HEAD
+[Unreleased]: https://github.com/timberio/agent/compare/v0.8.3...HEAD
+[0.8.3]: https://github.com/timberio/agent/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/timberio/agent/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/timberio/agent/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/timberio/agent/compare/v0.7.0...v0.8.0
