@@ -25,7 +25,6 @@ type Config struct {
 	Hostname                   string
 	CollectEC2MetadataDisabled bool              `toml:"disable_ec2_metadata"`
 	KubernetesConfig           *KubernetesConfig `toml:"kubernetes"`
-	DiscardLogsOnFatal         bool              `toml:"discard_logs_on_fatal"`
 }
 
 type KubernetesConfig struct {

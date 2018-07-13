@@ -8,9 +8,9 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
-	"time"
 )
 
 func TestForwardForwarding(test *testing.T) {
@@ -34,7 +34,7 @@ func TestForwardForwarding(test *testing.T) {
 	}))
 	defer ts.Close()
 
-	Forward(bufChan, retryablehttp.NewClient(), ts.URL, "api key", []byte{}, false)
+	Forward(bufChan, retryablehttp.NewClient(), ts.URL, "api key", []byte{})
 }
 
 func TestForwardRetries(test *testing.T) {
@@ -56,7 +56,7 @@ func TestForwardRetries(test *testing.T) {
 	client := retryablehttp.NewClient()
 	client.RetryWaitMin = 0
 
-	Forward(bufChan, client, ts.URL, "api key", []byte{}, false)
+	Forward(bufChan, client, ts.URL, "api key", []byte{})
 
 	if retries != 1 {
 		test.Fatalf("expected 1 retry, got %d", retries)
@@ -81,7 +81,26 @@ func TestForwardMetadata(test *testing.T) {
 
 	defer ts.Close()
 
-	Forward(bufChan, retryablehttp.NewClient(), ts.URL, "api key", []byte("Metadata test"), false)
+	Forward(bufChan, retryablehttp.NewClient(), ts.URL, "api key", []byte("Metadata test"))
+}
+
+func TestForwardClientError(test *testing.T) {
+	bufChan := make(chan *bytes.Buffer, 1)
+	bufChan <- bytes.NewBufferString("test log line\n")
+	close(bufChan)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+	}))
+	defer ts.Close()
+
+	client := retryablehttp.NewClient()
+
+	err := Forward(bufChan, client, ts.URL, "api key", []byte{})
+
+	if err == nil {
+		test.Fatalf("Expected err got %s", err)
+	}
 }
 
 func TestForwardForwardingTimeoutDoesNotFatal(test *testing.T) {
@@ -89,23 +108,21 @@ func TestForwardForwardingTimeoutDoesNotFatal(test *testing.T) {
 	bufChan <- bytes.NewBufferString("test log line\n")
 	close(bufChan)
 
-	retries := 0
+	requests := 0
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		retries += 1
-		time.Sleep(2 * time.Millisecond)
-
-		w.WriteHeader(200)
+		requests += 1
+		w.WriteHeader(500)
 	}))
-
 	defer ts.Close()
 
 	client := retryablehttp.NewClient()
 	client.HTTPClient.Timeout = 1 * time.Millisecond
 	client.RetryWaitMin = 0
+	client.RetryMax = 9
 
-	Forward(bufChan, client, ts.URL, "api key", []byte{}, true)
+	Forward(bufChan, client, ts.URL, "api key", []byte{})
 
-	if retries != 5 {
-		test.Fatalf("expected 1 retry, got %d", retries)
+	if requests != 10 {
+		test.Fatalf("expected to exhaust all retries and make requests %d, made %d", 10, requests)
 	}
 }
