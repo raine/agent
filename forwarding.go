@@ -18,7 +18,7 @@ func init() {
 	defaultHTTPClient.HTTPClient.Timeout = 10 * time.Second
 }
 
-func Forward(bufChan chan *bytes.Buffer, httpClient *retryablehttp.Client, endpoint, apiKey string, metadata []byte) {
+func Forward(bufChan chan *bytes.Buffer, httpClient *retryablehttp.Client, endpoint, apiKey string, metadata []byte, discard bool) {
 	// Set the logger when the function is called to ensure we pickup any logger changes.
 	httpClient.Logger = standardLoggerAlternative
 	token := base64.StdEncoding.EncodeToString([]byte(apiKey))
@@ -42,7 +42,13 @@ func Forward(bufChan chan *bytes.Buffer, httpClient *retryablehttp.Client, endpo
 		resp, err := httpClient.Do(req)
 		if err != nil {
 			// retries have already happened at this point, so give up
-			logger.Fatal(err)
+			if !discard {
+				logger.Fatal(err)
+			} else {
+				logger.Error("Error forwarding logs. Logs discarded.")
+				logger.Error(err)
+				continue
+			}
 		}
 		resp.Body.Close()
 
@@ -54,7 +60,7 @@ func Forward(bufChan chan *bytes.Buffer, httpClient *retryablehttp.Client, endpo
 	}
 }
 
-func ForwardStdin(endpoint string, apiKey string, batchPeriodSeconds int64, metadata *LogEvent, quit chan bool) error {
+func ForwardStdin(endpoint string, apiKey string, batchPeriodSeconds int64, metadata *LogEvent, quit chan bool, discard bool) error {
 	logger.Info("Starting forward for STDIN")
 
 	encodedMetadata, err := metadata.EncodeJSON()
@@ -68,12 +74,12 @@ func ForwardStdin(endpoint string, apiKey string, batchPeriodSeconds int64, meta
 	bufChan := make(chan *bytes.Buffer)
 	tailer := NewReaderTailer(os.Stdin, quit)
 	go Batch(tailer.Lines(), bufChan, batchPeriodSeconds)
-	Forward(bufChan, defaultHTTPClient, endpoint, apiKey, encodedMetadata)
+	Forward(bufChan, defaultHTTPClient, endpoint, apiKey, encodedMetadata, discard)
 
 	return nil
 }
 
-func ForwardFile(filePath string, endpoint string, apiKey string, poll bool, batchPeriodSeconds int64, metadata *LogEvent, quit chan bool, stop chan bool) error {
+func ForwardFile(filePath string, endpoint string, apiKey string, poll bool, batchPeriodSeconds int64, metadata *LogEvent, quit chan bool, stop chan bool, discard bool) error {
 	logger.Infof("Starting forward for file %s", filePath)
 
 	// Takes the base of the file's path so that "/var/log/apache2/access.log"
@@ -98,7 +104,7 @@ func ForwardFile(filePath string, endpoint string, apiKey string, poll bool, bat
 	bufChan := make(chan *bytes.Buffer)
 	tailer := NewFileTailer(filePath, poll, quit, stop)
 	go Batch(tailer.Lines(), bufChan, batchPeriodSeconds)
-	Forward(bufChan, defaultHTTPClient, endpoint, apiKey, encodedMetadata)
+	Forward(bufChan, defaultHTTPClient, endpoint, apiKey, encodedMetadata, discard)
 
 	return nil
 }

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/go-retryablehttp"
+	"time"
 )
 
 func TestForwardForwarding(test *testing.T) {
@@ -33,7 +34,7 @@ func TestForwardForwarding(test *testing.T) {
 	}))
 	defer ts.Close()
 
-	Forward(bufChan, retryablehttp.NewClient(), ts.URL, "api key", []byte{})
+	Forward(bufChan, retryablehttp.NewClient(), ts.URL, "api key", []byte{}, false)
 }
 
 func TestForwardRetries(test *testing.T) {
@@ -55,7 +56,7 @@ func TestForwardRetries(test *testing.T) {
 	client := retryablehttp.NewClient()
 	client.RetryWaitMin = 0
 
-	Forward(bufChan, client, ts.URL, "api key", []byte{})
+	Forward(bufChan, client, ts.URL, "api key", []byte{}, false)
 
 	if retries != 1 {
 		test.Fatalf("expected 1 retry, got %d", retries)
@@ -80,5 +81,31 @@ func TestForwardMetadata(test *testing.T) {
 
 	defer ts.Close()
 
-	Forward(bufChan, retryablehttp.NewClient(), ts.URL, "api key", []byte("Metadata test"))
+	Forward(bufChan, retryablehttp.NewClient(), ts.URL, "api key", []byte("Metadata test"), false)
+}
+
+func TestForwardForwardingTimeoutDoesNotFatal(test *testing.T) {
+	bufChan := make(chan *bytes.Buffer, 1)
+	bufChan <- bytes.NewBufferString("test log line\n")
+	close(bufChan)
+
+	retries := 0
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		retries += 1
+		time.Sleep(2 * time.Millisecond)
+
+		w.WriteHeader(200)
+	}))
+
+	defer ts.Close()
+
+	client := retryablehttp.NewClient()
+	client.HTTPClient.Timeout = 1 * time.Millisecond
+	client.RetryWaitMin = 0
+
+	Forward(bufChan, client, ts.URL, "api key", []byte{}, true)
+
+	if retries != 5 {
+		test.Fatalf("expected 1 retry, got %d", retries)
+	}
 }

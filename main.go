@@ -154,7 +154,7 @@ func runCaptureStdin(ctx *cli.Context) error {
 
 	// Start forwarding STDIN
 	quit := handleSignals()
-	err = ForwardStdin(config.Endpoint, config.DefaultApiKey, config.BatchPeriodSeconds, metadata, quit)
+	err = ForwardStdin(config.Endpoint, config.DefaultApiKey, config.BatchPeriodSeconds, metadata, quit, config.DiscardLogsOnFatal)
 	if err != nil {
 		logger.Error(err)
 	} else {
@@ -268,7 +268,7 @@ func runCaptureFiles(ctx *cli.Context) error {
 	for fileConfig := range fileConfigsChan {
 		logger.Infof("Received file %s, attempting to foward", fileConfig.Path)
 		go func(fileConfig *FileConfig) {
-			err := ForwardFile(fileConfig.Path, config.Endpoint, fileConfig.ApiKey, config.Poll, config.BatchPeriodSeconds, metadata, quit, nil)
+			err := ForwardFile(fileConfig.Path, config.Endpoint, fileConfig.ApiKey, config.Poll, config.BatchPeriodSeconds, metadata, quit, nil, config.DiscardLogsOnFatal)
 			if err != nil {
 				logger.Error(err)
 			} else {
@@ -403,7 +403,7 @@ func runCaptureKube(ctx *cli.Context) error {
 				return
 			}
 
-			err = ForwardFile(fileConfig.Path, config.Endpoint, fileConfig.ApiKey, config.Poll, config.BatchPeriodSeconds, currentMetadata, quit, stop)
+			err = ForwardFile(fileConfig.Path, config.Endpoint, fileConfig.ApiKey, config.Poll, config.BatchPeriodSeconds, currentMetadata, quit, stop, config.DiscardLogsOnFatal)
 			if err != nil {
 				logger.Error(err)
 			} else {

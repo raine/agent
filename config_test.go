@@ -112,6 +112,24 @@ path = "/var/log/log.log"
 	}
 }
 
+func TestNewConfigDiscardLogsOnFatal(t *testing.T) {
+	configString := `
+discard_logs_on_fatal = true
+`
+
+	configFile := strings.NewReader(configString)
+	config := NewConfig()
+	err := config.UpdateFromReader(configFile)
+	if err != nil {
+		panic(err)
+	}
+	actualValue := config.DiscardLogsOnFatal
+
+	if actualValue != true {
+		t.Errorf("Expected DiscardLogsOnFatal to be true but got non true value")
+	}
+}
+
 func TestNewConfigMultipleFiles(t *testing.T) {
 	configString := `
 default_api_key = "default_api_key"
