@@ -41,7 +41,7 @@ func TestGlobalStateLoadWithFile(test *testing.T) {
 	globalState = NewGlobalState()
 	globalState.Load(file.Name())
 
-	if !cmp.Equal(globalState.Data, expected) {
+	if !cmp.Equal(globalState.Data.States, expected.States) {
 		test.Fatalf("Expected in memory global state to equal on disk global state")
 	}
 }
@@ -134,6 +134,7 @@ func TestLoadStateWithLegacyStatefile(test *testing.T) {
 	if !cmp.Equal(storedState, loadedState) {
 		test.Fatal("expected state and global state to be equal")
 	}
+	globalState.PersistState()
 
 	globalState.Load(globalStateFile)
 	storedState = globalState.getState(filename)
@@ -188,7 +189,8 @@ func TestPersistState(test *testing.T) {
 	globalState = NewGlobalState()
 	globalState.Load(globalStateFile)
 
-	PersistState(filename, checksum, offset)
+	UpdateState(filename, checksum, offset)
+	globalState.PersistState()
 
 	storedState := globalState.getState(filename)
 	if storedState.Checksum != checksum || storedState.Offset != offset {

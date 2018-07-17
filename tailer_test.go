@@ -34,7 +34,7 @@ func TestReaderTailer(test *testing.T) {
 
 	expected := generateLogLines("test", 10)
 	for line := range tailer.Lines() {
-		if line != <-expected {
+		if string(line.Lines) != <-expected {
 			test.Fail()
 		}
 	}
@@ -107,6 +107,9 @@ func TestFileTailerPersistsState(test *testing.T) {
 	quit <- true
 	firstTailer.Wait()
 
+	// Assume lines sent
+	UpdateStateOffset(file.Name(), firstTailer.inner.LastOffset)
+
 	sendLines(file, generateLogLines("two", 10))
 	time.Sleep(5 * time.Millisecond)
 
@@ -120,6 +123,7 @@ func TestFileTailerPersistsState(test *testing.T) {
 
 	quit <- true
 	secondTailer.Wait()
+	UpdateStateOffset(file.Name(), secondTailer.inner.LastOffset)
 
 	sendLines(file, generateLogLines("four", 10))
 	time.Sleep(5 * time.Millisecond)
@@ -240,9 +244,9 @@ func expectLines(test *testing.T, tailer Tailer, lines chan string) {
 	timeout := time.After(5 * time.Second)
 	for expectedLine := range lines {
 		select {
-		case line := <-tailer.Lines():
-			if line != expectedLine {
-				test.Fatalf("got '%s', expected '%s'", line, expectedLine)
+		case message := <-tailer.Lines():
+			if string(message.Lines) != expectedLine {
+				test.Fatalf("got '%s', expected '%s'", message.Lines, expectedLine)
 			}
 		case <-timeout:
 			test.Fatalf("timed out expecting '%s'", expectedLine)

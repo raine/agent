@@ -279,6 +279,23 @@ func runCaptureFiles(ctx *cli.Context) error {
 	// Listen for new files, tail them, and forward them
 	quit := handleSignals()
 
+	// Start global state flush timer
+	go globalState.Start()
+
+	// Listen for a shutdown signal and close the fileConfigsChan
+	// This allows us to move to code in the end of this function, which allows us cleanup our globalState ticker and
+	// persist state to disk once more before existing
+	go func() {
+		for {
+			select {
+			case <-quit:
+				close(fileConfigsChan)
+				return
+			default:
+			}
+		}
+	}()
+
 	files := make(map[string]bool)
 	for fileConfig := range fileConfigsChan {
 		logger.Infof("Received file %s, attempting to foward", fileConfig.Path)
@@ -295,17 +312,21 @@ func runCaptureFiles(ctx *cli.Context) error {
 			err := ForwardFile(fileConfig.Path, config.Endpoint, fileConfig.ApiKey, config.Poll, config.BatchPeriodSeconds, metadata, quit, nil)
 			if err != nil {
 				logger.Error(err)
-			} else {
-				logger.Infof("Forwarding goroutine quit for %s", fileConfig.Path)
 			}
+			logger.Infof("Forwarding goroutine quit for %s", fileConfig.Path)
 		}(fileConfig)
 	}
 
-	return nil
+	// Before exiting, stop global state timer and flush state to disk
+	globalState.Stop()
+	globalState.PersistState()
+
+	// Wait for graceful cleanup as handled in signals.go
+	select {}
 }
 
 // Entry point for running the agent on Kubernetes
-func runCaptureKube(ctx *cli.Context) error {
+func runCaptureKube(ctx *cli.Context) {
 	// Setup the logger first so that any debug output can be made to the user.
 	logfilePath := ctx.String("output-log-file")
 	if logfilePath != "" {
@@ -418,6 +439,23 @@ func runCaptureKube(ctx *cli.Context) error {
 		logger.Warn("Metadata dependent on the Kubernetes API will not be collected.")
 	}
 
+	// Start global state flush timer
+	go globalState.Start()
+
+	// Listen for a shutdown signal and close the fileConfigsChan
+	// This allows us to move to code in the end of this function, which allows us cleanup our globalState ticker and
+	// persist state to disk once more before existing
+	go func() {
+		for {
+			select {
+			case <-quit:
+				close(fileConfigsChan)
+				return
+			default:
+			}
+		}
+	}()
+
 	for fileConfig := range fileConfigsChan {
 		logger.Infof("Received file %s, attempting to forward", fileConfig.Path)
 
@@ -430,11 +468,16 @@ func runCaptureKube(ctx *cli.Context) error {
 			err = ForwardFile(fileConfig.Path, config.Endpoint, fileConfig.ApiKey, config.Poll, config.BatchPeriodSeconds, currentMetadata, quit, stop)
 			if err != nil {
 				logger.Error(err)
-			} else {
-				logger.Infof("Forwarding goroutine quit for %s", fileConfig.Path)
 			}
+
+			logger.Infof("Forwarding goroutine quit for %s", fileConfig.Path)
 		}(fileConfig)
 	}
 
-	return nil
+	// Before exiting, stop global state timer and flush state to disk
+	globalState.Stop()
+	globalState.PersistState()
+
+	// Wait for graceful cleanup as handled in signals.go
+	select {}
 }

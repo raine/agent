@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+  - Tailed file state is flushed to disk on an interval (1 second) as well as on agent shutdown.
+
 ## [0.8.3] - 2018-06-26
 
 ### Fixed

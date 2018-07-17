@@ -20,17 +20,17 @@ var UserAgent = fmt.Sprintf("timber-agent/%s", version)
 func init() {
 	defaultHTTPClient.HTTPClient.Timeout = 10 * time.Second
 	// Retry "forever"
-	defaultHTTPClient.RetryMax = math.MaxUint32
+	defaultHTTPClient.RetryMax = math.MaxInt32
 }
 
-func Forward(bufChan chan *bytes.Buffer, httpClient *retryablehttp.Client, endpoint, apiKey string, metadata []byte) error {
+func Forward(messageChan chan *LogMessage, httpClient *retryablehttp.Client, endpoint, apiKey string, metadata []byte) error {
 	// Set the logger when the function is called to ensure we pickup any logger changes.
 	httpClient.Logger = standardLoggerAlternative
 	token := base64.StdEncoding.EncodeToString([]byte(apiKey))
 	authorization := fmt.Sprintf("Basic %s", token)
 
-	for buf := range bufChan {
-		req, err := retryablehttp.NewRequest("POST", endpoint, bytes.NewReader(buf.Bytes()))
+	for message := range messageChan {
+		req, err := retryablehttp.NewRequest("POST", endpoint, bytes.NewReader(message.Lines))
 		if err != nil {
 			logger.Fatal(err)
 		}
@@ -60,6 +60,12 @@ func Forward(bufChan chan *bytes.Buffer, httpClient *retryablehttp.Client, endpo
 
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 			logger.Infof("flushed buffer (status code %d)", resp.StatusCode)
+
+			// Store state in global state upon success
+			if message.Position != 0 {
+				// If position != 0, we have a LogMessage that supports recording state
+				UpdateStateOffset(message.Filename, message.Position)
+			}
 		} else if resp.StatusCode >= 400 && resp.StatusCode < 500 {
 			return errors.New(fmt.Sprintf("unexpected response (status code %d): %s", resp.StatusCode, string(body)))
 		}
@@ -79,10 +85,13 @@ func ForwardStdin(endpoint string, apiKey string, batchPeriodSeconds int64, meta
 		return err
 	}
 
-	bufChan := make(chan *bytes.Buffer)
+	messageChan := make(chan *LogMessage)
 	tailer := NewReaderTailer(os.Stdin, quit)
-	go Batch(tailer.Lines(), bufChan, batchPeriodSeconds)
-	return Forward(bufChan, defaultHTTPClient, endpoint, apiKey, encodedMetadata)
+
+	// Here we run our batcher in the background and return from Forward
+	// Forward will block until the tailer is closed
+	go Batch(tailer.Lines(), messageChan, batchPeriodSeconds)
+	return Forward(messageChan, defaultHTTPClient, endpoint, apiKey, encodedMetadata)
 }
 
 func ForwardFile(filePath string, endpoint string, apiKey string, poll bool, batchPeriodSeconds int64, metadata *LogEvent, quit chan bool, stop chan bool) error {
@@ -107,8 +116,11 @@ func ForwardFile(filePath string, endpoint string, apiKey string, poll bool, bat
 		return err
 	}
 
-	bufChan := make(chan *bytes.Buffer)
+	messageChan := make(chan *LogMessage)
 	tailer := NewFileTailer(filePath, poll, quit, stop)
-	go Batch(tailer.Lines(), bufChan, batchPeriodSeconds)
-	return Forward(bufChan, defaultHTTPClient, endpoint, apiKey, encodedMetadata)
+
+	// Here we run our batcher in the background and return from Forward
+	// Forward will block until the tailer is closed
+	go Batch(tailer.Lines(), messageChan, batchPeriodSeconds)
+	return Forward(messageChan, defaultHTTPClient, endpoint, apiKey, encodedMetadata)
 }

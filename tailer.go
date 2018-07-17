@@ -10,19 +10,19 @@ import (
 )
 
 type Tailer interface {
-	Lines() chan string
+	Lines() chan *LogMessage
 }
 
 type FileTailer struct {
 	filename string
 	inner    *tail.Tail
-	lines    chan string
+	lines    chan *LogMessage
 }
 
 func NewFileTailer(filename string, poll bool, quit chan bool, stop chan bool) *FileTailer {
 	logger.Infof("Creating new file tailer for %s", filename)
 
-	ch := make(chan string)
+	ch := make(chan *LogMessage)
 
 	var seekInfo *tail.SeekInfo
 	start := &tail.SeekInfo{0, io.SeekStart}
@@ -33,6 +33,23 @@ func NewFileTailer(filename string, poll bool, quit chan bool, stop chan bool) *
 	if state == nil {
 		logger.Warnf("Could not load state for file %s, agent will recognize new data only", filename)
 		seekInfo = end
+
+		var offset int64
+		stat, err := os.Stat(filename)
+		if err != nil {
+			logger.Errorf("Failed to stat file %s: %s", filename, err)
+			offset = 0
+		} else {
+			offset = stat.Size()
+		}
+
+		checksum, err := calculateChecksum(filename)
+		if err != nil {
+			logger.Errorf("Failed to checksum file %s: %s", filename, err)
+		}
+
+		// Record state of file in globalState
+		UpdateState(filename, checksum, offset)
 	} else {
 		checksum, err := calculateChecksum(filename)
 		if err != nil {
@@ -71,16 +88,20 @@ func NewFileTailer(filename string, poll bool, quit chan bool, stop chan bool) *
 					if err := line.Err; err != nil {
 						logger.Errorf("Error reading from %s: %s", filename, err)
 					} else {
-						ch <- line.Text
+						position, _ := inner.Tell()
+
+						ch <- &LogMessage{
+							Filename: filename,
+							Lines:    []byte(line.Text),
+							Position: position,
+						}
 					}
 				} else {
 					close(ch)
 					logger.Infof("Stopped tailing %s at offset %d", filename, inner.LastOffset)
 					checksum, err := calculateChecksum(filename)
 					if err == nil {
-						if err := PersistState(filename, checksum, inner.LastOffset); err != nil {
-							logger.Errorf("Error persisting tail state: %s", err)
-						}
+						UpdateStateChecksum(filename, checksum)
 					} else {
 						logger.Errorf("Error calculating checksum: %s", err)
 					}
@@ -101,7 +122,7 @@ func NewFileTailer(filename string, poll bool, quit chan bool, stop chan bool) *
 	return &FileTailer{inner: inner, lines: ch, filename: filename}
 }
 
-func (f *FileTailer) Lines() chan string {
+func (f *FileTailer) Lines() chan *LogMessage {
 	return f.lines
 }
 
@@ -130,13 +151,13 @@ func calculateChecksum(file string) (uint32, error) {
 }
 
 type ReaderTailer struct {
-	lines chan string
+	lines chan *LogMessage
 }
 
 func NewReaderTailer(r io.Reader, quit chan bool) *ReaderTailer {
 	logger.Info("Creating reader tailer")
 
-	ch := make(chan string)
+	ch := make(chan *LogMessage)
 	innerCh := make(chan string)
 	scanner := bufio.NewScanner(r)
 
@@ -158,7 +179,11 @@ func NewReaderTailer(r io.Reader, quit chan bool) *ReaderTailer {
 					close(ch)
 					return
 				}
-				ch <- line
+				ch <- &LogMessage{
+					Filename: "stdin",
+					Lines:    []byte(line),
+					Position: 0,
+				}
 			case <-quit:
 				close(ch)
 				return
@@ -169,6 +194,6 @@ func NewReaderTailer(r io.Reader, quit chan bool) *ReaderTailer {
 	return &ReaderTailer{lines: ch}
 }
 
-func (r *ReaderTailer) Lines() chan string {
+func (r *ReaderTailer) Lines() chan *LogMessage {
 	return r.lines
 }

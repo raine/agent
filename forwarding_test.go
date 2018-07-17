@@ -14,8 +14,10 @@ import (
 )
 
 func TestForwardForwarding(test *testing.T) {
-	bufChan := make(chan *bytes.Buffer, 1)
-	bufChan <- bytes.NewBufferString("test log line\n")
+	bufChan := make(chan *LogMessage, 1)
+	bufChan <- &LogMessage{
+		Lines: []byte("test log line\n"),
+	}
 	close(bufChan)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -38,8 +40,10 @@ func TestForwardForwarding(test *testing.T) {
 }
 
 func TestForwardRetries(test *testing.T) {
-	bufChan := make(chan *bytes.Buffer, 1)
-	bufChan <- bytes.NewBufferString("test log line\n")
+	bufChan := make(chan *LogMessage, 1)
+	bufChan <- &LogMessage{
+		Lines: []byte("test log line\n"),
+	}
 	close(bufChan)
 
 	retries := 0
@@ -64,8 +68,10 @@ func TestForwardRetries(test *testing.T) {
 }
 
 func TestForwardMetadata(test *testing.T) {
-	bufChan := make(chan *bytes.Buffer, 1)
-	bufChan <- bytes.NewBufferString("test log line\n")
+	bufChan := make(chan *LogMessage, 1)
+	bufChan <- &LogMessage{
+		Lines: []byte("test log line\n"),
+	}
 	close(bufChan)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -85,8 +91,10 @@ func TestForwardMetadata(test *testing.T) {
 }
 
 func TestForwardClientError(test *testing.T) {
-	bufChan := make(chan *bytes.Buffer, 1)
-	bufChan <- bytes.NewBufferString("test log line\n")
+	bufChan := make(chan *LogMessage, 1)
+	bufChan <- &LogMessage{
+		Lines: []byte("test log line\n"),
+	}
 	close(bufChan)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -104,8 +112,10 @@ func TestForwardClientError(test *testing.T) {
 }
 
 func TestForwardForwardingTimeoutDoesNotFatal(test *testing.T) {
-	bufChan := make(chan *bytes.Buffer, 1)
-	bufChan <- bytes.NewBufferString("test log line\n")
+	bufChan := make(chan *LogMessage, 1)
+	bufChan <- &LogMessage{
+		Lines: []byte("test log line\n"),
+	}
 	close(bufChan)
 
 	requests := 0

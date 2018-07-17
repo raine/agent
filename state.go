@@ -12,18 +12,40 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 )
 
+//LogMessage An interface to represent a LogMessage, which is one or more log lines to be sent to a centralized logging
+// backend. This interface contains all the fields required for storing state within our GlobalState. For now, since
+// we are only storing the state of tracked files, LogMessageFile is our only implementation, with other LogMessage
+// structs containing placeholder/dummy methods.
+// type LogMessage interface {
+// 	Lines() []byte
+// 	Position() int64
+// 	Filename() string
+// }
+
+//LogMessageFile LogMessage for a log line from a file
+type LogMessage struct {
+	Filename string
+	Lines    []byte
+	Position int64
+}
+
 type GlobalState struct {
-	sync.RWMutex
+	sync.Mutex
 
 	Data *GlobalStateData
 	File *os.File
+
+	flushTimer *time.Ticker
 }
 
 type GlobalStateData struct {
+	sync.RWMutex
+
 	Version string            `json:"version"`
-	States  map[string]*State `json:"states,omitempty"`
+	States  map[string]*State `json:"states"`
 }
 
 type State struct {
@@ -103,11 +125,39 @@ func (gs *GlobalState) Load(stateFilename string) error {
 	return nil
 }
 
+//PersistState Write GlobalState to disk
+func (gs *GlobalState) PersistState() error {
+	return gs.persistState()
+}
+
+//Start Create and start ticker for writing GlobalState to disk on a timer
+func (gs *GlobalState) Start() {
+	gs.flushTimer = time.NewTicker(1 * time.Second)
+
+	for _ = range gs.flushTimer.C {
+		err := gs.persistState()
+		if err != nil {
+			logger.Fatal(err)
+		}
+	}
+}
+
+//Start Stop GlobalState ticker
+func (gs *GlobalState) Stop() {
+	gs.flushTimer.Stop()
+}
+
 func (gs *GlobalState) deleteState(filename string) {
+	gs.Data.Lock()
+	defer gs.Data.Unlock()
+
 	delete(gs.Data.States, filename)
 }
 
 func (gs *GlobalState) getState(filename string) *State {
+	gs.Data.RLock()
+	defer gs.Data.RUnlock()
+
 	return gs.Data.States[filename]
 }
 
@@ -124,6 +174,9 @@ func (gs *GlobalState) persistState() error {
 }
 
 func (gs *GlobalState) saveState(filename string, state *State) {
+	gs.Data.Lock()
+	defer gs.Data.Unlock()
+
 	gs.Data.States[filename] = state
 }
 
@@ -162,16 +215,9 @@ func writeGlobalStateFile(file *os.File, data *GlobalStateData) error {
 	return nil
 }
 
-// DeleteState Removes state from GlobalState and writes changes to disk
-func DeleteState(filename string) error {
+//DeleteState Removes state from GlobalState
+func DeleteState(filename string) {
 	globalState.deleteState(filename)
-
-	err := globalState.persistState()
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 //LoadState Returns initialized *State with data for given filename. We first look at our legacy statefile before
@@ -185,7 +231,7 @@ func LoadState(filename string) *State {
 	}
 
 	if state != nil {
-		PersistState(filename, state.Checksum, state.Offset)
+		UpdateState(filename, state.Checksum, state.Offset)
 		os.Remove(LegacyStateFilename(filename))
 		return state
 	} else {
@@ -195,19 +241,39 @@ func LoadState(filename string) *State {
 	return state
 }
 
-//PersistState Creates a *State and records that in GlobalState.
-func PersistState(filename string, checksum uint32, offset int64) error {
+//UpdateState Update globalState entry for filename in memory. globalState is flushed to disk on an interval and
+// at agent shutdown.
+func UpdateState(filename string, checksum uint32, offset int64) {
 	globalState.saveState(filename, &State{Checksum: checksum, Offset: offset})
+}
 
-	err := globalState.persistState()
-	if err != nil {
-		return err
+//UpdateStateChecksum Update globalState checksum for filename in memory
+func UpdateStateChecksum(filename string, checksum uint32) error {
+	state := globalState.getState(filename)
+	if state == nil {
+		return errors.New(fmt.Sprintf("Unable to read state for file %s", filename))
 	}
+
+	state.Checksum = checksum
+	globalState.saveState(filename, state)
 
 	return nil
 }
 
-//StateFilename returns legacy StateFilename for a given filename.
+//UpdateStateOffset Update globalState offset for filename in memory
+func UpdateStateOffset(filename string, offset int64) error {
+	state := globalState.getState(filename)
+	if state == nil {
+		return errors.New(fmt.Sprintf("Unable to read state for file %s", filename))
+	}
+
+	state.Offset = offset
+	globalState.saveState(filename, state)
+
+	return nil
+}
+
+//LegacyStateFilename returns legacy StateFilename for a given filename.
 func LegacyStateFilename(filename string) string {
 	return fmt.Sprintf("%s-state.json", path.Base(filename))
 }
