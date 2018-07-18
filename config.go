@@ -25,6 +25,7 @@ type Config struct {
 	Hostname                   string
 	CollectEC2MetadataDisabled bool              `toml:"disable_ec2_metadata"`
 	KubernetesConfig           *KubernetesConfig `toml:"kubernetes"`
+	ReadNewFileFromStart       bool              `toml:"read_from_start"`
 }
 
 type KubernetesConfig struct {

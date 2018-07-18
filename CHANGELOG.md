@@ -7,9 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+  - Add `read_from_start` config option to read all content of newly discovered files instead of
+    tailing and shipping only new content.
+
 ### Changed
 
   - Tailed file state is flushed to disk on an interval (1 second) as well as on agent shutdown.
+
+### Fixed
+
+  - The abscence of a state file is no longer treated as an error
 
 ## [0.8.3] - 2018-06-26
 

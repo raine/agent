@@ -94,7 +94,7 @@ func ForwardStdin(endpoint string, apiKey string, batchPeriodSeconds int64, meta
 	return Forward(messageChan, defaultHTTPClient, endpoint, apiKey, encodedMetadata)
 }
 
-func ForwardFile(filePath string, endpoint string, apiKey string, poll bool, batchPeriodSeconds int64, metadata *LogEvent, quit chan bool, stop chan bool) error {
+func ForwardFile(filePath string, readNewFileFromStart bool, endpoint string, apiKey string, poll bool, batchPeriodSeconds int64, metadata *LogEvent, quit chan bool, stop chan bool) error {
 	logger.Infof("Starting forward for file %s", filePath)
 
 	// Takes the base of the file's path so that "/var/log/apache2/access.log"
@@ -117,7 +117,7 @@ func ForwardFile(filePath string, endpoint string, apiKey string, poll bool, bat
 	}
 
 	messageChan := make(chan *LogMessage)
-	tailer := NewFileTailer(filePath, poll, quit, stop)
+	tailer := NewFileTailer(filePath, readNewFileFromStart, poll, quit, stop)
 
 	// Here we run our batcher in the background and return from Forward
 	// Forward will block until the tailer is closed

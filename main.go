@@ -309,7 +309,7 @@ func runCaptureFiles(ctx *cli.Context) error {
 		}
 
 		go func(fileConfig *FileConfig) {
-			err := ForwardFile(fileConfig.Path, config.Endpoint, fileConfig.ApiKey, config.Poll, config.BatchPeriodSeconds, metadata, quit, nil)
+			err := ForwardFile(fileConfig.Path, config.ReadNewFileFromStart, config.Endpoint, fileConfig.ApiKey, config.Poll, config.BatchPeriodSeconds, metadata, quit, nil)
 			if err != nil {
 				logger.Error(err)
 			}
@@ -465,7 +465,7 @@ func runCaptureKube(ctx *cli.Context) {
 				return
 			}
 
-			err = ForwardFile(fileConfig.Path, config.Endpoint, fileConfig.ApiKey, config.Poll, config.BatchPeriodSeconds, currentMetadata, quit, stop)
+			err = ForwardFile(fileConfig.Path, config.ReadNewFileFromStart, config.Endpoint, fileConfig.ApiKey, config.Poll, config.BatchPeriodSeconds, currentMetadata, quit, stop)
 			if err != nil {
 				logger.Error(err)
 			}

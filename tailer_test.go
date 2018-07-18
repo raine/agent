@@ -17,7 +17,7 @@ func TestFileTailer(test *testing.T) {
 	}
 	defer os.Remove(file.Name())
 
-	tailer := NewFileTailer(file.Name(), true, nil, nil)
+	tailer := NewFileTailer(file.Name(), false, true, nil, nil)
 	time.Sleep(5 * time.Millisecond)
 
 	go sendLines(file, generateLogLines("test", 100))
@@ -56,7 +56,7 @@ func TestFileTailerListensOnStopChannel(test *testing.T) {
 
 	stop := make(chan bool, 1)
 
-	tailer := NewFileTailer(file.Name(), true, nil, stop)
+	tailer := NewFileTailer(file.Name(), false, true, nil, stop)
 	stop <- true
 
 	select {
@@ -98,7 +98,7 @@ func TestFileTailerPersistsState(test *testing.T) {
 	quit := make(chan bool)
 
 	// with no state file, tail should start at the end
-	firstTailer := NewFileTailer(file.Name(), true, quit, nil)
+	firstTailer := NewFileTailer(file.Name(), false, true, quit, nil)
 	time.Sleep(5 * time.Millisecond)
 
 	go sendLines(file, generateLogLines("one", 10))
@@ -106,15 +106,14 @@ func TestFileTailerPersistsState(test *testing.T) {
 
 	quit <- true
 	firstTailer.Wait()
-
-	// Assume lines sent
+	// Assume lines were sent successfully
 	UpdateStateOffset(file.Name(), firstTailer.inner.LastOffset)
 
 	sendLines(file, generateLogLines("two", 10))
 	time.Sleep(5 * time.Millisecond)
 
 	// with state file, start from previous spot
-	secondTailer := NewFileTailer(file.Name(), true, quit, nil)
+	secondTailer := NewFileTailer(file.Name(), false, true, quit, nil)
 	time.Sleep(5 * time.Millisecond)
 
 	go sendLines(file, generateLogLines("three", 10))
@@ -129,7 +128,7 @@ func TestFileTailerPersistsState(test *testing.T) {
 	time.Sleep(5 * time.Millisecond)
 
 	// after multiple runs, state file should contain most recent state
-	thirdTailer := NewFileTailer(file.Name(), true, quit, nil)
+	thirdTailer := NewFileTailer(file.Name(), false, true, quit, nil)
 	time.Sleep(5 * time.Millisecond)
 
 	go sendLines(file, generateLogLines("five", 10))
@@ -171,10 +170,10 @@ func TestFileTailerIgnoresStateAfterRotation(test *testing.T) {
 	quit := make(chan bool)
 
 	// with no state file, tail should start at the end
-	firstTailer := NewFileTailer(file.Name(), true, quit, nil)
+	firstTailer := NewFileTailer(file.Name(), false, true, quit, nil)
 	time.Sleep(5 * time.Millisecond)
 
-	go sendLines(file, generateLogLines("one", 10))
+	sendLines(file, generateLogLines("one", 10))
 	expectLines(test, firstTailer, generateLogLines("one", 10))
 
 	quit <- true
@@ -188,7 +187,7 @@ func TestFileTailerIgnoresStateAfterRotation(test *testing.T) {
 	time.Sleep(5 * time.Millisecond)
 
 	// with state file that doesn't match, start from beginning
-	secondTailer := NewFileTailer(file.Name(), true, quit, nil)
+	secondTailer := NewFileTailer(file.Name(), false, true, quit, nil)
 	time.Sleep(5 * time.Millisecond)
 
 	go sendLines(file, generateLogLines("three", 10))
@@ -200,6 +199,39 @@ func TestFileTailerIgnoresStateAfterRotation(test *testing.T) {
 
 	time.Sleep(5 * time.Millisecond)
 	os.Remove(secondTailer.filename)
+}
+
+func TestFileTailerReadFromStart(test *testing.T) {
+	file, err := ioutil.TempFile("", "timber-agent-test")
+	if err != nil {
+		panic(err)
+	}
+	defer os.Remove(file.Name())
+
+	globalStateFile, err := ioutil.TempFile("", "timber-agent-test-statefile.json")
+	if err != nil {
+		panic(err)
+	}
+	defer os.Remove(file.Name())
+	globalState.File = globalStateFile
+
+	quit := make(chan bool)
+
+	firstTailer := NewFileTailer(file.Name(), false, true, quit, nil)
+	time.Sleep(5 * time.Millisecond)
+
+	sendLines(file, generateLogLines("one", 10))
+	expectLines(test, firstTailer, generateLogLines("one", 10))
+
+	quit <- true
+	firstTailer.Wait()
+
+	secondTailer := NewFileTailer(file.Name(), true, true, quit, nil)
+	time.Sleep(5 * time.Millisecond)
+
+	go sendLines(file, generateLogLines("two", 10))
+	expectLines(test, secondTailer, generateLogLines("one", 10))
+	expectLines(test, secondTailer, generateLogLines("two", 10))
 }
 
 //cleanupFile Waits for the given file to be flushed to disk by the OS, and then removes it.

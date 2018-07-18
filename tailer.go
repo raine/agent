@@ -19,7 +19,7 @@ type FileTailer struct {
 	lines    chan *LogMessage
 }
 
-func NewFileTailer(filename string, poll bool, quit chan bool, stop chan bool) *FileTailer {
+func NewFileTailer(filename string, readNewFileFromStart bool, poll bool, quit chan bool, stop chan bool) *FileTailer {
 	logger.Infof("Creating new file tailer for %s", filename)
 
 	ch := make(chan *LogMessage)
@@ -28,45 +28,57 @@ func NewFileTailer(filename string, poll bool, quit chan bool, stop chan bool) *
 	start := &tail.SeekInfo{0, io.SeekStart}
 	end := &tail.SeekInfo{0, io.SeekEnd}
 
-	// Attempt to resume tailing
-	state := LoadState(filename)
-	if state == nil {
-		logger.Warnf("Could not load state for file %s, agent will recognize new data only", filename)
-		seekInfo = end
+	var newState *State
 
-		var offset int64
-		stat, err := os.Stat(filename)
+	state := LoadState(filename)
+	if state != nil {
+		// We treat a failed checksum the same as a non-matching checksum which results in reading the file from the
+		// beginning. While we may send duplicate data, we prefer that over not sending new data.
+		checksum, err := calculateChecksum(filename)
 		if err != nil {
-			logger.Errorf("Failed to stat file %s: %s", filename, err)
-			offset = 0
+			logger.Errorf("Failed to checksum file %s: %s", filename, err)
+		}
+
+		if checksum == state.Checksum {
+			logger.Infof("Checksum for %s matched recorded state, resuming - offset: %d, seekstart: %d", filename, state.Offset, io.SeekStart)
+			seekInfo = &tail.SeekInfo{state.Offset, io.SeekStart}
 		} else {
-			offset = stat.Size()
+			logger.Infof("Checksum for %s does not match recorded state. Reading from beginning of file.", filename)
+			seekInfo = start
+			state.Offset = 0
+		}
+
+		newState = state
+	} else {
+		var msg string
+		newState = &State{}
+
+		if readNewFileFromStart {
+			msg = "read from start of file"
+			seekInfo = start
+		} else {
+			msg = "recognize new data only"
+			seekInfo = end
+
+			stat, err := os.Stat(filename)
+			if err != nil {
+				logger.Errorf("Failed to stat file %s: %s", filename, err)
+			} else {
+				newState.Offset = stat.Size()
+			}
 		}
 
 		checksum, err := calculateChecksum(filename)
 		if err != nil {
 			logger.Errorf("Failed to checksum file %s: %s", filename, err)
 		}
+		newState.Checksum = checksum
 
-		// Record state of file in globalState
-		UpdateState(filename, checksum, offset)
-	} else {
-		checksum, err := calculateChecksum(filename)
-		if err != nil {
-			logger.Errorf("Failed to generate checksum for file %s, agent will recognize new data only: %s", filename, err)
-			seekInfo = end
-		} else {
-			if checksum == state.Checksum {
-				// state file is applicable
-				seekInfo = &tail.SeekInfo{state.Offset, io.SeekStart}
-				logger.Infof("Checksum for %s matched recorded state, resuming - offset: %d, seekstart: %d", filename, state.Offset, io.SeekStart)
-			} else {
-				// file has been rotated
-				logger.Infof("Checksum for %s does not match recorded state. Reading from beginning of file.", filename)
-				seekInfo = start
-			}
-		}
+		logger.Infof("New file detected %s, agent will %s", filename, msg)
 	}
+
+	// Write state of file to globalState, which may be redundant but handles all cases
+	UpdateState(filename, newState.Checksum, newState.Offset)
 
 	inner, err := tail.TailFile(filename, tail.Config{
 		Follow:    true,
