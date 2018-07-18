@@ -1,5 +1,9 @@
 ---
 title: Kubernetes
+items:
+  - installation.md
+  - configuration.md
+  - troubleshooting.md
 ---
 
 # Kubernetes
