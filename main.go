@@ -250,8 +250,18 @@ func runCaptureFiles(ctx *cli.Context) error {
 
 	// Each file in the configuration can contain a path with a glob pattern. So
 	// we set a file path channel to receive these paths over time as they are discovered.
+	globs := make(map[string]bool)
 	fileConfigsChan := make(chan *FileConfig)
+
 	for _, fileConfig := range config.Files {
+		// Check to see if we already looping on glob, if so do not duplicate
+		if _, ok := globs[fileConfig.Path]; ok {
+			logger.Warnf("Ignoring duplicate glob pattern: %s", fileConfig.Path)
+			continue
+		} else {
+			globs[fileConfig.Path] = true
+		}
+
 		go func(fileConfig FileConfig) {
 			err := GlobContinually(fileConfig.Path, fileConfig.ApiKey, fileConfigsChan)
 			if err != nil {
@@ -265,8 +275,18 @@ func runCaptureFiles(ctx *cli.Context) error {
 	// Listen for new files, tail them, and forward them
 	quit := handleSignals()
 
+	files := make(map[string]bool)
 	for fileConfig := range fileConfigsChan {
 		logger.Infof("Received file %s, attempting to foward", fileConfig.Path)
+
+		// Check to see if we already tailing file, if so do not duplicate
+		if _, ok := files[fileConfig.Path]; ok {
+			logger.Warnf("Already tailing file: %s", fileConfig.Path)
+			continue
+		} else {
+			files[fileConfig.Path] = true
+		}
+
 		go func(fileConfig *FileConfig) {
 			err := ForwardFile(fileConfig.Path, config.Endpoint, fileConfig.ApiKey, config.Poll, config.BatchPeriodSeconds, metadata, quit, nil)
 			if err != nil {

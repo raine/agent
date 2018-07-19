@@ -38,11 +38,11 @@ func GlobWithTick(globState *globState, tick <-chan time.Time) error {
 
 func newGlobState(path string, apiKey string, fileConfigChan chan *FileConfig) *globState {
 	return &globState{
-		path:            path,
-		apiKey:          apiKey,
-		currentPaths:    map[string]bool{},
-		fileConfigChan:  fileConfigChan,
-		checkCount:      int64(0),
+		path:           path,
+		apiKey:         apiKey,
+		currentPaths:   map[string]bool{},
+		fileConfigChan: fileConfigChan,
+		checkCount:     int64(0),
 	}
 }
 
@@ -72,7 +72,7 @@ func (g *globState) Check() error {
 	for _, path := range paths {
 		_, ok := g.currentPaths[path]
 		if !ok {
-			logger.Infof("Disovered new file from %s -> %s", g.path, path)
+			logger.Infof("Discovered new file from %s -> %s", g.path, path)
 
 			g.currentPaths[path] = true
 			newFileConfig := &FileConfig{
