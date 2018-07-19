@@ -92,7 +92,11 @@ func main() {
 		},
 	}
 
-	app.Run(os.Args)
+	err := app.Run(os.Args)
+	if err != nil {
+		// Exit with 64, EX_USAGE, to indicate a command line usage error
+		os.Exit(64)
+	}
 }
 
 // Entry point for running the agent over STDIN
