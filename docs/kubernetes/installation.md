@@ -24,13 +24,13 @@ is outside the scope of this document._
     2a. For Kubernetes Cluster versions >= 1.7
 
     ```bash
-    kubectl apply -f https://raw.githubusercontent.com/timberio/agent/v0.8.3/support/scripts/kubernetes/timber-agent-daemonset.yaml
+    kubectl apply -f https://raw.githubusercontent.com/timberio/agent/v0.9.0/support/scripts/kubernetes/timber-agent-daemonset.yaml
     ```
 
     2b. For Kubernetes Cluster versions <= 1.6
 
     ```bash
-    kubectl apply -f https://raw.githubusercontent.com/timberio/agent/v0.8.3/support/scripts/kubernetes/timber-agent-daemonset-legacy.yaml
+    kubectl apply -f https://raw.githubusercontent.com/timberio/agent/v0.9.0/support/scripts/kubernetes/timber-agent-daemonset-legacy.yaml
     ```
 
 ## RBAC Support (1.6+ required)
@@ -43,9 +43,9 @@ RBAC resources should be created manually.
 Create RBAC resources
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/timberio/agent/v0.8.3/support/scripts/kubernetes/timber-agent-daemonset-with-rbac.yaml
+kubectl apply -f https://raw.githubusercontent.com/timberio/agent/v0.9.0/support/scripts/kubernetes/timber-agent-daemonset-with-rbac.yaml
 ```
 
 If you are managing RBAC outside of this install, then you should only need the [Timber Agent ClusterRole].
 
-[Timber Agent ClusterRole]: https://raw.githubusercontent.com/timberio/agent/v0.8.3/support/scripts/kubernetes/timber-agent-clusterrole.yaml
+[Timber Agent ClusterRole]: https://raw.githubusercontent.com/timberio/agent/v0.9.0/support/scripts/kubernetes/timber-agent-clusterrole.yaml
