@@ -12,7 +12,7 @@
 
 [[constraint]]
   name = "github.com/timberio/tail"
-  revision = "cdfe527fb098c61e77f575e256c507868e5b31b2"
+  revision = "cc7c82aebf7ca13304456304c4cdaa0c7a7189fc"
 
 [[constraint]]
   name = "gopkg.in/urfave/cli.v1"

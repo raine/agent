@@ -96,25 +96,6 @@ func TestStop(t *testing.T) {
 	tail.Cleanup()
 }
 
-func TestStopSetsLastOffset(t *testing.T) {
-	tailTest := NewTailTest("stop_sets_lastoffset", t)
-	tailTest.CreateFile("test.txt", "abcdefghjk\n") // 11 bytes
-	tail := tailTest.StartTail("test.txt", Config{Follow: true, Location: nil, MustExist: true})
-
-	// read the first line (11 bytes)
-	_ = <-tail.Lines
-
-	if err := tail.Stop(); err != nil {
-		t.Error("Tailing did not stop correctly")
-	}
-
-	if tail.LastOffset != 11 {
-		t.Errorf("Expected last offset to be 11, got %d instead", tail.LastOffset)
-	}
-
-	tail.Cleanup()
-}
-
 func TestStopAtEOF(t *testing.T) {
 	tailTest := NewTailTest("maxlinesize", t)
 	tailTest.CreateFile("test.txt", "hello\nthere\nworld\n")
@@ -122,7 +103,7 @@ func TestStopAtEOF(t *testing.T) {
 
 	// read "hello"
 	line := <-tail.Lines
-	if line.Text != "hello" {
+	if string(line.Text) != "hello" {
 		t.Errorf("Expected to get 'hello', got '%s' instead", line.Text)
 	}
 
@@ -191,7 +172,10 @@ func TestLocationFullDontFollow(t *testing.T) {
 	tailTest.AppendFile("test.txt", "more\ndata\n")
 	<-time.After(100 * time.Millisecond)
 
-	tailTest.Cleanup(tail, true)
+	// Do not bother with stopping as it could kill the tomb during
+	// the reading of data written above. Timings can vary based on
+	// test environment.
+	tailTest.Cleanup(tail, false)
 }
 
 func TestLocationEnd(t *testing.T) {
@@ -277,6 +261,27 @@ func TestRateLimiting(t *testing.T) {
 	tailTest.Cleanup(tail, true)
 }
 
+func TestSetsOffset(t *testing.T) {
+	fileContent := "hello\nworld\n"
+
+	tailTest := NewTailTest("set-offset", t)
+	tailTest.CreateFile("test.txt", fileContent)
+	tail := tailTest.StartTail("test.txt", Config{Follow: true, Location: nil})
+
+	// Read lines to advance position in file
+	<-tail.Lines
+	<-tail.Lines
+
+	tell, _ := tail.Tell()
+
+	if tail.Offset == tell {
+		tailTest.Fatalf("Expected offset to be %d but got %d", tell, tail.Offset)
+	}
+
+	tailTest.RemoveFile("test.txt")
+	tail.Done()
+}
+
 func TestTell(t *testing.T) {
 	tailTest := NewTailTest("tell-position", t)
 	tailTest.CreateFile("test.txt", "hello\nworld\nagain\nmore\n")
@@ -300,7 +305,7 @@ func TestTell(t *testing.T) {
 	for l := range tail.Lines {
 		// it may readed one line in the chan(tail.Lines),
 		// so it may lost one line.
-		if l.Text != "world" && l.Text != "again" {
+		if string(l.Text) != "world" && string(l.Text) != "again" {
 			tailTest.Fatalf("mismatch; expected world or again, but got %s",
 				l.Text)
 		}
@@ -322,7 +327,7 @@ func TestBlockUntilExists(t *testing.T) {
 		tailTest.CreateFile("test.txt", "hello world\n")
 	}()
 	for l := range tail.Lines {
-		if l.Text != "hello world" {
+		if string(l.Text) != "hello world" {
 			tailTest.Fatalf("mismatch; expected hello world, but got %s",
 				l.Text)
 		}
@@ -564,7 +569,7 @@ func (t TailTest) ReadLines(tail *Tail, lines []string) {
 		}
 		// Note: not checking .Err as the `lines` argument is designed
 		// to match error strings as well.
-		if tailedLine.Text != line {
+		if string(tailedLine.Text) != line {
 			t.Fatalf(
 				"unexpected line/err from tail: "+
 					"expecting <<%s>>>, but got <<<%s>>>",

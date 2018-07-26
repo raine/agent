@@ -23,22 +23,22 @@ func Fatal(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
-// partitionString partitions the string into chunks of given size,
+//PartitionBytes partitions the []byte into chunks of given size,
 // with the last chunk of variable size.
-func PartitionString(s string, chunkSize int) []string {
+func PartitionBytes(b []byte, chunkSize int) [][]byte {
 	if chunkSize <= 0 {
 		panic("invalid chunkSize")
 	}
-	length := len(s)
+	length := len(b)
 	chunks := 1 + length/chunkSize
 	start := 0
 	end := chunkSize
-	parts := make([]string, 0, chunks)
+	parts := make([][]byte, 0, chunks)
 	for {
 		if end > length {
 			end = length
 		}
-		parts = append(parts, s[start:end])
+		parts = append(parts, b[start:end])
 		if end == length {
 			break
 		}

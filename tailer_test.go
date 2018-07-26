@@ -107,7 +107,7 @@ func TestFileTailerPersistsState(test *testing.T) {
 	quit <- true
 	firstTailer.Wait()
 	// Assume lines were sent successfully
-	UpdateStateOffset(file.Name(), firstTailer.inner.LastOffset)
+	UpdateStateOffset(file.Name(), firstTailer.inner.Offset)
 
 	sendLines(file, generateLogLines("two", 10))
 	time.Sleep(5 * time.Millisecond)
@@ -122,7 +122,7 @@ func TestFileTailerPersistsState(test *testing.T) {
 
 	quit <- true
 	secondTailer.Wait()
-	UpdateStateOffset(file.Name(), secondTailer.inner.LastOffset)
+	UpdateStateOffset(file.Name(), secondTailer.inner.Offset)
 
 	sendLines(file, generateLogLines("four", 10))
 	time.Sleep(5 * time.Millisecond)
@@ -282,6 +282,37 @@ func expectLines(test *testing.T, tailer Tailer, lines chan string) {
 			}
 		case <-timeout:
 			test.Fatalf("timed out expecting '%s'", expectedLine)
+		}
+	}
+}
+
+//
+// Benchmarks
+//
+
+func BenchmarkTail(b *testing.B) {
+	logger.Out = ioutil.Discard
+
+	file, err := ioutil.TempFile("", "timber-agent-benchmark")
+	if err != nil {
+		panic(err)
+	}
+	defer os.Remove(file.Name())
+
+	globalStateFile, err := ioutil.TempFile("", "timber-agent-benchmark-statefile.json")
+	if err != nil {
+		panic(err)
+	}
+	defer os.Remove(file.Name())
+	globalState.File = globalStateFile
+
+	tailer := NewFileTailer(file.Name(), false, true, nil, nil)
+
+	for n := 0; n < b.N; n++ {
+		sendLines(file, generateLogLines("benchmark line", 10000))
+
+		for i := 10000; i > 0; i-- {
+			<-tailer.Lines()
 		}
 	}
 }

@@ -286,14 +286,9 @@ func runCaptureFiles(ctx *cli.Context) error {
 	// This allows us to move to code in the end of this function, which allows us cleanup our globalState ticker and
 	// persist state to disk once more before existing
 	go func() {
-		for {
-			select {
-			case <-quit:
-				close(fileConfigsChan)
-				return
-			default:
-			}
-		}
+		<-quit
+		close(fileConfigsChan)
+		return
 	}()
 
 	files := make(map[string]bool)
@@ -446,14 +441,9 @@ func runCaptureKube(ctx *cli.Context) {
 	// This allows us to move to code in the end of this function, which allows us cleanup our globalState ticker and
 	// persist state to disk once more before existing
 	go func() {
-		for {
-			select {
-			case <-quit:
-				close(fileConfigsChan)
-				return
-			default:
-			}
-		}
+		<-quit
+		close(fileConfigsChan)
+		return
 	}()
 
 	for fileConfig := range fileConfigsChan {

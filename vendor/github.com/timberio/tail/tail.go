@@ -5,13 +5,13 @@ package tail
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -26,13 +26,13 @@ var (
 )
 
 type Line struct {
-	Text string
+	Text []byte
 	Time time.Time
 	Err  error // Error from tail
 }
 
 // NewLine returns a Line with present time.
-func NewLine(text string) *Line {
+func NewLine(text []byte) *Line {
 	return &Line{text, time.Now(), nil}
 }
 
@@ -77,7 +77,7 @@ type Tail struct {
 	Filename string
 	Lines    chan *Line
 	Config
-	LastOffset int64 // byte offset at the time tailing is stopped
+	Offset int64 // position of the last byte read in file
 
 	file   *os.File
 	reader *bufio.Reader
@@ -175,9 +175,6 @@ var errStopAtEOF = errors.New("tail: stop at eof")
 
 func (tail *Tail) close() {
 	close(tail.Lines)
-	if offset, err := tail.Tell(); err == nil {
-		tail.LastOffset = offset
-	}
 	tail.closeFile()
 }
 
@@ -208,12 +205,17 @@ func (tail *Tail) reopen() error {
 		}
 		break
 	}
+
+	// We call reopen on first file open before seeking, file truncate or file delete
+	// In all cases, our offset should be set to 0
+	tail.Offset = 0
+
 	return nil
 }
 
-func (tail *Tail) readLine() (string, error) {
+func (tail *Tail) readLine() ([]byte, error) {
 	tail.lk.Lock()
-	line, err := tail.reader.ReadString('\n')
+	line, err := tail.reader.ReadBytes('\n')
 	tail.lk.Unlock()
 	if err != nil {
 		// Note ReadString "returns the data read before the error" in
@@ -222,7 +224,10 @@ func (tail *Tail) readLine() (string, error) {
 		return line, err
 	}
 
-	line = strings.TrimRight(line, "\n")
+	line = bytes.TrimRight(line, "\n")
+
+	// Add read bytes to current offset
+	tail.Offset += int64(len(line) + 1)
 
 	return line, err
 }
@@ -244,7 +249,7 @@ func (tail *Tail) tailFileSync() {
 
 	// Seek to requested location on first open of the file.
 	if tail.Location != nil {
-		_, err := tail.file.Seek(tail.Location.Offset, tail.Location.Whence)
+		err := tail.seekTo(*tail.Location)
 		tail.Logger.Printf("Seeked %s - %+v\n", tail.Filename, tail.Location)
 		if err != nil {
 			tail.Killf("Seek error on %s: %s", tail.Filename, err)
@@ -279,7 +284,7 @@ func (tail *Tail) tailFileSync() {
 				// file when rate limit is reached.
 				msg := ("Too much log activity; waiting a second " +
 					"before resuming tailing")
-				tail.Lines <- &Line{msg, time.Now(), errors.New(msg)}
+				tail.Lines <- &Line{[]byte(msg), time.Now(), errors.New(msg)}
 				select {
 				case <-time.After(time.Second):
 				case <-tail.Dying():
@@ -292,13 +297,13 @@ func (tail *Tail) tailFileSync() {
 			}
 		} else if err == io.EOF {
 			if !tail.Follow {
-				if line != "" {
+				if line != nil {
 					tail.sendLine(line)
 				}
 				return
 			}
 
-			if tail.Follow && line != "" {
+			if tail.Follow && line != nil {
 				// this has the potential to never return the last line if
 				// it's not followed by a newline; seems a fair trade here
 				err := tail.seekTo(SeekInfo{Offset: offset, Whence: 0})
@@ -401,20 +406,27 @@ func (tail *Tail) seekTo(pos SeekInfo) error {
 	if err != nil {
 		return fmt.Errorf("Seek error on %s: %s", tail.Filename, err)
 	}
+
+	// Set tailer offset to current position in file
+	tail.Offset = pos.Offset
+
 	// Reset the read buffer whenever the file is re-seek'ed
-	tail.reader.Reset(tail.file)
+	if tail.reader != nil {
+		tail.reader.Reset(tail.file)
+	}
+
 	return nil
 }
 
 // sendLine sends the line(s) to Lines channel, splitting longer lines
 // if necessary. Return false if rate limit is reached.
-func (tail *Tail) sendLine(line string) bool {
+func (tail *Tail) sendLine(line []byte) bool {
 	now := time.Now()
-	lines := []string{line}
+	lines := [][]byte{line}
 
 	// Split longer lines
 	if tail.MaxLineSize > 0 && len(line) > tail.MaxLineSize {
-		lines = util.PartitionString(line, tail.MaxLineSize)
+		lines = util.PartitionBytes(line, tail.MaxLineSize)
 	}
 
 	for _, line := range lines {

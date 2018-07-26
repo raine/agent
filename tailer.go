@@ -100,7 +100,7 @@ func NewFileTailer(filename string, readNewFileFromStart bool, poll bool, quit c
 					if err := line.Err; err != nil {
 						logger.Errorf("Error reading from %s: %s", filename, err)
 					} else {
-						position, _ := inner.Tell()
+						position := inner.Offset
 
 						ch <- &LogMessage{
 							Filename: filename,
@@ -110,7 +110,6 @@ func NewFileTailer(filename string, readNewFileFromStart bool, poll bool, quit c
 					}
 				} else {
 					close(ch)
-					logger.Infof("Stopped tailing %s at offset %d", filename, inner.LastOffset)
 					checksum, err := calculateChecksum(filename)
 					if err == nil {
 						UpdateStateChecksum(filename, checksum)

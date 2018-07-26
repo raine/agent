@@ -22,7 +22,6 @@
     "cmp/internal/value"
   ]
   revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
-  version = "v0.2.0"
 
 [[projects]]
   branch = "master"
@@ -62,7 +61,7 @@
     "watch",
     "winfile"
   ]
-  revision = "cdfe527fb098c61e77f575e256c507868e5b31b2"
+  revision = "cc7c82aebf7ca13304456304c4cdaa0c7a7189fc"
 
 [[projects]]
   branch = "master"
@@ -80,10 +79,10 @@
   revision = "7ddbeae9ae08c6a06a59597f0c9edbc5ff2444ce"
 
 [[projects]]
-  name = "gopkg.in/fsnotify.v1"
+  name = "gopkg.in/fsnotify/fsnotify.v1"
   packages = ["."]
-  revision = "629574ca2a5df945712d3079857300b5e4da0236"
-  version = "v1.4.2"
+  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
+  version = "v1.4.7"
 
 [[projects]]
   branch = "v1"
@@ -100,6 +99,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3872c03edbdce871b00907506914730458db672bb623caee8e9a827e268e9518"
+  inputs-digest = "de897ff1acae4139711795e4cb9ae2de06300f2d26cfe7d06777cfaf823b58e4"
   solver-name = "gps-cdcl"
   solver-version = 1
