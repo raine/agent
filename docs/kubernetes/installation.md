@@ -43,7 +43,7 @@ RBAC resources should be created manually.
 Create RBAC resources
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/timberio/agent/v0.9.1/support/scripts/kubernetes/timber-agent-daemonset-with-rbac.yaml
+kubectl apply -f https://raw.githubusercontent.com/timberio/agent/v0.9.1/support/scripts/kubernetes/timber-agent-daemonset-rbac.yaml
 ```
 
 If you are managing RBAC outside of this install, then you should only need the [Timber Agent ClusterRole].
