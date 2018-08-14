@@ -1,0 +1,129 @@
+---
+# ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: timber-agent
+  namespace: default
+
+---
+# ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: timber-agent
+rules:
+- apiGroups: ["*"]
+  resources:
+    - cronjobs
+    - daemonsets
+    - deployments
+    - jobs
+    - namespaces
+    - pods
+    - replicasets
+    - statefulsets
+  verbs: ["get"]
+
+---
+# ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: timber-agent
+subjects:
+- kind: ServiceAccount
+  name: timber-agent
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: timber-agent
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: timber-agent
+data:
+  # Commented out is an example config with default values
+  # The empty string serves as a placeholder
+  config.toml: "" # |
+    # [kubernetes.exclude]
+    #    namespaces = "kube-system"
+    #    pods = "timber-agent"
+
+---
+# Daemonset
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: timber-agent
+spec:
+  selector:
+    matchLabels:
+      name: timber-agent
+  template:
+    metadata:
+      labels:
+        name: timber-agent
+    spec:
+      initContainers:
+      - name: docker-pull-timber-agent
+        image: "timberio/docker-client:17.03.2-ce"
+        args: ["pull", "timberio/agent:0.9.1"]
+        volumeMounts:
+        - name: dockersock
+          mountPath: /var/run/docker.sock
+      - name: docker-pull-kubectl
+        image: "timberio/docker-client:17.03.2-ce"
+        args: ["pull", "timberio/kubectl:1.10.0"]
+        volumeMounts:
+        - name: dockersock
+          mountPath: /var/run/docker.sock
+      containers:
+      - name: timber-agent
+        image: "timberio/agent:0.9.1"
+        args: ["capture-kube", "-c", "/timber/config.toml"]
+        env:
+          - name: TIMBER_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: timber
+                key: timber-api-key
+          # Use local api served by kubectl-proxy container
+          - name: TIMBER_AGENT_PROXY_SERVICE_HOST
+            value: "localhost"
+          - name: TIMBER_AGENT_PROXY_SERVICE_PORT
+            value: "8001"
+        volumeMounts:
+        - name: timber-agent
+          mountPath: /timber
+          readOnly: true
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+        - name: varlibtimberagent
+          mountPath: /var/lib/timber-agent
+        - name: varlog
+          mountPath: /var/log
+      - name: kubectl-proxy
+        image: "timberio/kubectl:1.10.0"
+        args: ["proxy", "-p", "8001"]
+      serviceAccount: timber-agent
+      volumes:
+      - name: dockersock
+        hostPath:
+          path: /var/run/docker.sock
+      - name: timber-agent
+        configMap:
+          name: timber-agent
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: varlibtimberagent
+        hostPath:
+          path: /var/lib/timber-agent
+      - name: varlog
+        hostPath:
+          path: /var/log
