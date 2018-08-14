@@ -63,3 +63,29 @@ configuration.
 If these evironment variables values are correct, RBAC permissions could be causing the problem. RBAC permissions can
 be verified by launching a Pod with the same RBAC sevice account. This Pod should a long running I am container to
 perform and validate requests against the Kubernetes API.
+
+## Tectonic - Failed to mount /etc/hostname
+
+Some users have reported an error when attempting to run the Timber Agent on a Tectonic based installation of Kubernetes. The issue is that `/etc/hostname` is not a file on CoreOS workers launched by Tectonic and therefore cannot be mounted into the Timber Agent container. Below are kubectl commands applying manifests that have been changed to work with Tectonic:
+
+### Kubernetes >= 1.7
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/timberio/agent/master/support/scripts/kubernetes/tectonic-timber-agent-daemonset.yaml
+```
+
+### Kubernetes with RBAC >= 1.7
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/timberio/agent/master/support/scripts/kubernetes/tectonic-timber-agent-daemonset-rbac.yaml
+```
+
+### Kubernetes <= 1.6
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/timberio/agent/master/support/scripts/kubernetes/tectonic-timber-agent-daemonset-legacy.yaml
+```
+
+The only changes in these manifests are the removal of mounting `/etc/hostname/`, the source of the problem. By default, `/etc/hostname` is mounted inside of the Timber Agent container to add a container's host to its log metadata.
+
+_Note: Logs shipped by agents launched from these manifests will have their hostnames set to the container name of the Timber Agent._
