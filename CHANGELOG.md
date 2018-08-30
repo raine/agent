@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+  - Resolve panic when statefile contained bad data. State is now initialized
+    correctly on unaccepted values in properly formed json.
+
 ## [0.9.1] - 2018-07-26
 
 ### Fixed

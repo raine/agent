@@ -46,6 +46,40 @@ func TestGlobalStateLoadWithFile(test *testing.T) {
 	}
 }
 
+func TestGlobalStateLoadFileWithBadData(test *testing.T) {
+	file, err := ioutil.TempFile("", "global-state-test")
+	if err != nil {
+		panic(err)
+	}
+	defer os.Remove(file.Name())
+
+	file.Write([]byte("Garbage"))
+
+	globalState = NewGlobalState()
+	globalState.Load(file.Name())
+
+	if !cmp.Equal(globalState.Data.States, NewGlobalState().Data.States) {
+		test.Fatal("Expected state to be initialized successfully")
+	}
+}
+
+func TestGlobalStateLoadFileWithBadJSON(test *testing.T) {
+	file, err := ioutil.TempFile("", "global-state-test")
+	if err != nil {
+		panic(err)
+	}
+	defer os.Remove(file.Name())
+
+	file.Write([]byte("{}"))
+
+	globalState = NewGlobalState()
+	globalState.Load(file.Name())
+
+	if !cmp.Equal(globalState.Data.States, NewGlobalState().Data.States) {
+		test.Fatal("Expected state to be initialized successfully")
+	}
+}
+
 func TestGlobalStateLoadWithoutFile(test *testing.T) {
 	filename := "tmp/global-state-test"
 	defer func() {

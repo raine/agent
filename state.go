@@ -105,7 +105,27 @@ func (gs *GlobalState) Load(stateFilename string) error {
 			return errors.New(fmt.Sprintf("Unable to parse json from global statefile %s: %s", stateFilename, err))
 		}
 
-		gs.Data = &globalStateData
+		// We could have malformed or empty fields in our statefile while
+		// still being valid json. In this case, we need to ensure our
+		// globalState is valid and does not contain incorrect values.
+		// We accomplish this by preserving our default initial values,
+		// which will be overwritten on next state update.
+		//
+		// We may ignore logs line here if configuraiton is not set to read the
+		// file from beginning on discovery, but this will allow the agent
+		// to boot and fix that statefile. Additionally, not setting read from
+		// beginning already implies some data may be ignored.
+		//
+		// When unmarshalling JSON, objects not found will be set to the
+		// default value for that type. For strings it is the empty string,
+		// and for maps that is nil.
+		if globalStateData.Version != "" {
+			gs.Data.Version = globalStateData.Version
+		}
+
+		if globalStateData.States != nil {
+			gs.Data.States = globalStateData.States
+		}
 	} else {
 		// If we didn't find a file, we create the file and persist its empty state to disk
 		stateFile, err = createGlobalStateFile(stateFilename)
