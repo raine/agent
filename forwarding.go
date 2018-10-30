@@ -66,8 +66,12 @@ func Forward(messageChan chan *LogMessage, httpClient *retryablehttp.Client, end
 				// If position != 0, we have a LogMessage that supports recording state
 				UpdateStateOffset(message.Filename, message.Position)
 			}
-		} else if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-			return errors.New(fmt.Sprintf("unexpected response (status code %d): %s", resp.StatusCode, string(body)))
+		} else {
+			// We log the error here instead of returning it in
+			// order to continue retrying on any http error. We had
+			// previously returned on any client error, but some
+			// should resolve themselves.
+			logger.Errorf(fmt.Sprintf("unexpected response (status code %d): %s", resp.StatusCode, string(body)))
 		}
 	}
 

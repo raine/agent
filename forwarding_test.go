@@ -106,8 +106,8 @@ func TestForwardClientError(test *testing.T) {
 
 	err := Forward(bufChan, client, ts.URL, "api key", []byte{})
 
-	if err == nil {
-		test.Fatalf("Expected err got %s", err)
+	if err != nil {
+		test.Fatalf("Expected nil got %s", err)
 	}
 }
 

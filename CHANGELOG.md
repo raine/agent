@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+  - Agent will retry on all client errors, no longer requiring a restart for
+    certain errors/conditions (ex: billing cycle renewal).
+
 ## [0.9.2] - 2018-09-04
 
 ### Fixed
