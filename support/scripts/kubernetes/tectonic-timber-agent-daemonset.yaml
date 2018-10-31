@@ -30,7 +30,7 @@ spec:
       initContainers:
       - name: docker-pull-timber-agent
         image: "timberio/docker-client:17.03.2-ce"
-        args: ["pull", "timberio/agent:0.9.2"]
+        args: ["pull", "timberio/agent:0.9.3"]
         volumeMounts:
         - name: dockersock
           mountPath: /var/run/docker.sock
@@ -42,7 +42,7 @@ spec:
           mountPath: /var/run/docker.sock
       containers:
       - name: timber-agent
-        image: "timberio/agent:0.9.2"
+        image: "timberio/agent:0.9.3"
         args: ["capture-kube", "-c", "/timber/config.toml"]
         env:
           - name: TIMBER_API_KEY
